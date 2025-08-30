@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<title>RPG Karakter Oluşturucu - Sıralı Tek Çark</title>
+<style>
+  body { 
+    font-family: 'Arial', sans-serif; 
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: #eee; 
+    text-align: center;
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+  }
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .card { 
+    background: rgba(30, 30, 46, 0.95);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    border: 1px solid #444;
+    margin-bottom: 20px;
+  }
+  h1 {
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    margin-bottom: 10px;
+    font-size: 2.5em;
+  }
+  button { 
+    padding: 15px 30px;
+    font-size: 18px;
+    margin: 20px 0;
+    cursor: pointer;
+    border: none;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+    transition: all 0.3s ease;
+  }
+  button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
+  }
+  button:disabled {
+    background: linear-gradient(135deg, #666 0%, #555 100%);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  .wheel-container { 
+    margin: 30px auto;
+    position: relative;
+    width: 250px;
+    height: 250px;
+    border: 4px solid #555;
+    border-radius: 50%;
+    background: #222;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    overflow: visible;
+  }
+  .wheel { 
+    width: 100%; 
+    height: 100%; 
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
+  }
+  .pointer {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 20px solid #ff6b6b;
+    z-index: 10;
+  }
+  .current-selection {
+    font-size: 16px;
+    color: #4ecdc4;
+    margin: 10px 0;
+    font-style: italic;
+  }
+  .stat {
+    font-size: 18px;
+    margin: 8px 0;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    border-left: 4px solid #4ecdc4;
+  }
+  .result-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 20px;
+    margin-top: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .final-stat {
+    font-size: 20px;
+    margin: 10px 0;
+    padding: 12px;
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 10px;
+    border-left: 4px solid #ffd700;
+  }
+  #statsPanel {
+    max-width: 600px;
+    margin: 0 auto 30px auto;
+    background: rgba(30,30,46,0.9);
+    padding: 15px 25px;
+    border-radius: 15px;
+    border: 1px solid #444;
+    text-align: left;
+  }
+  #statsPanel h3 {
+    margin-top: 0;
+    color: #ffd700;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>⚔️ RPG Karakter Oluşturucu ⚔️</h1>
+      <div class="current-selection" id="currentStep">Klan Seçimi</div>
+      <div class="wheel-container">
+        <div class="pointer"></div>
+        <canvas id="wheel" class="wheel" width="250" height="250"></canvas>
+      </div>
+      <button id="spinButton" onclick="spinWheel()">Çarkı Çevir</button>
+      <div id="stepResult"></div>
+    </div>
+    <div id="statsPanel">
+      <h3>Seçilen Statlar</h3>
+      <p><b>Klan:</b> <span id="statClan">-</span></p>
+      <p><b>Güç:</b> <span id="statGuc">-</span></p>
+      <p><b>Hız:</b> <span id="statHiz">-</span></p>
+      <p><b>Karizma:</b> <span id="statKarizma">-</span></p>
+      <p><b>Dövüş Stili:</b> <span id="statStyle">-</span></p>
+    </div>
+    <div class="card result-card" id="finalResult" style="display: none;">
+      <h2>🎯 Karakter Sonuçları</h2>
+      <div id="resultContent"></div>
+    </div>
+  </div>
+<script>
+// Klanlar ve stiller
+const clans = [
+  {name: "Demiralay", chance: 1, bonus: {g: 10, h: 10, k: 10}, guaranteedStyle: null, color: "#ff6b6b"},
+  {name: "Taş", chance: 10, bonus: {g: 3, h: 3, k: 1}, guaranteedStyle: "Karate", color: "#4ecdc4"},
+  {name: "Karahan", chance: 10, bonus: {g: 1, h: 0, k: 5}, guaranteedStyle: "Karate", color: "#45b7d1"},
+  {name: "Eşme", chance: 20, bonus: {g: 2, h: 0, k: 0}, guaranteedStyle: "Boks", color: "#96ceb4"},
+  {name: "Yağmurcu", chance: 20, bonus: {g: 1, h: 0, k: 2}, guaranteedStyle: "Muay Thai", color: "#feca57"},
+  {name: "Tulunay", chance: 20, bonus: {g: 2, h: 0, k: 0}, guaranteedStyle: null, color: "#ff9ff3"},
+  {name: "Çepe", chance: 30, bonus: {g: 0, h: 0, k: 0}, guaranteedStyle: null, color: "#54a0ff"},
+  {name: "Aysu", chance: 40, bonus: {g: -2, h: -2, k: -2}, guaranteedStyle: null, color: "#5f27cd"}
+];
+const fightingStyles = [
+  {name: "Karate", chance: 10, bonus: 2, color: "#ff6b6b"},
+  {name: "Boks", chance: 10, bonus: 2, color: "#4ecdc4"},
+  {name: "Muay Thai", chance: 10, bonus: 2, color: "#45b7d1"},
+  {name: "Hiçbir Stil", chance: 70, bonus: 0, color: "#888"}
+];
+let segments = [];
+const wheelCanvas = document.getElementById("wheel");
+const spinButton = document.getElementById("spinButton");
+const currentStepLabel = document.getElementById("currentStep");
+const stepResult = document.getElementById("stepResult");
+const finalResult = document.getElementById("finalResult");
+const resultContent = document.getElementById("resultContent");
+const statClan = document.getElementById("statClan");
+const statGuc = document.getElementById("statGuc");
+const statHiz = document.getElementById("statHiz");
+const statKarizma = document.getElementById("statKarizma");
+const statStyle = document.getElementById("statStyle");
+const steps = ["klan", "guc", "hiz", "karizma", "dovusStili"];
+let currentStepIndex = 0;
+let selectedClan = null, selectedGuc = null, selectedHiz = null, selectedKarizma = null, selectedStyle = null;
+let spinning = false, currentRotation = 0;
+function weightedRandom(arr) {
+  let total = arr.reduce((acc, o) => acc + o.chance, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < arr.length; i++) {
+    if (r < arr[i].chance) return arr[i];
+    r -= arr[i].chance;
+  }
+  return arr[arr.length - 1];
+}
+function setupSegmentsForStep(step) {
+  segments = [];
+  if (step === "klan") segments = clans.map(c=>({name:c.name,value:c.name,chance:c.chance,color:c.color}));
+  else if (step==="guc"||step==="hiz"||step==="karizma")
+    for(let i=1;i<=10;i++)
+      segments.push({name:i.toString(),value:i,chance:1,color:`hsl(${i*36},80%,60%)`});
+  else if(step==="dovusStili")
+    segments = fightingStyles.map(s=>({name:s.name,value:s.name,chance:s.chance,color:s.color}));
+}
+function drawWheel(rotationDeg=0) {
+  const ctx = wheelCanvas.getContext("2d");
+  ctx.clearRect(0,0,250,250);
+  const centerX = 125, centerY = 125, radius = 120;
+  const segmentCount = segments.length;
+  const anglePerSegment = 2*Math.PI/segmentCount;
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate(rotationDeg * Math.PI/180);
+  // Segmentler
+  for(let i=0;i<segmentCount;i++){
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.arc(0,0,radius,i*anglePerSegment,(i+1)*anglePerSegment);
+    ctx.closePath();
+    ctx.fillStyle = segments[i].color;
+    ctx.fill();
+    ctx.restore();
+  }
+  // Segment isimleri
+  ctx.font="bold 14px Arial";
+  ctx.textAlign="center";
+  ctx.textBaseline="middle";
+  for(let i=0;i<segmentCount;i++){
+    const angle = (i + 0.5) * anglePerSegment;
+    const x = Math.cos(angle) * 80;
+    const y = Math.sin(angle) * 80;
+    ctx.save();
+    ctx.rotate(angle);
+    ctx.fillStyle="#fff";
+    ctx.shadowColor="#000";
+    ctx.shadowBlur=4;
+    ctx.rotate(-angle);
+    ctx.fillText(segments[i].name, x, y);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+function spinWheel() {
+  if(spinning) return;
+  spinning = true; spinButton.disabled=true; stepResult.textContent="";
+  const segmentCount=segments.length,anglePerSegment=360/segmentCount;
+  let selectedSegment;
+  if(currentStepIndex===0||currentStepIndex===4)
+    selectedSegment=weightedRandom(segments);
+  else selectedSegment=segments[Math.floor(Math.random()*segmentCount)];
+  const selectedIndex=segments.findIndex(s=>s===selectedSegment);
+  const targetRotation=360*5+(360-selectedIndex*anglePerSegment-anglePerSegment/2);
+  let start=null; const duration=3000;
+  function animate(ts){
+    if(!start)start=ts;
+    const elapsed=ts-start;
+    const progress=Math.min(elapsed/duration,1);
+    const easeOut=1-Math.pow(1-progress,3);
+    currentRotation=easeOut*targetRotation;
+    drawWheel(currentRotation);
+    if(progress<1)requestAnimationFrame(animate);
+    else{spinning=false;spinButton.disabled=false;handleSelection(selectedSegment);}
+  }
+  requestAnimationFrame(animate);
+}
+function handleSelection(selected){
+  const step=steps[currentStepIndex];
+  if(step==="klan"){
+    selectedClan=clans.find(c=>c.name===selected.value);
+    stepResult.innerHTML=`<p class="stat">Seçilen Klan: <b>${selectedClan.name}</b></p>`;
+    statClan.textContent=selectedClan.name;
+  }else if(step==="guc"){
+    selectedGuc=selected.value;
+    stepResult.innerHTML=`<p class="stat">Seçilen Güç: <b>${selectedGuc}</b></p>`;
+    statGuc.textContent=selectedGuc;
+  }else if(step==="hiz"){
+    selectedHiz=selected.value;
+    stepResult.innerHTML=`<p class="stat">Seçilen Hız: <b>${selectedHiz}</b></p>`;
+    statHiz.textContent=selectedHiz;
+  }else if(step==="karizma"){
+    selectedKarizma=selected.value;
+    stepResult.innerHTML=`<p class="stat">Seçilen Karizma: <b>${selectedKarizma}</b></p>`;
+    statKarizma.textContent=selectedKarizma;
+  }else if(step==="dovusStili"){
+    selectedStyle=fightingStyles.find(s=>s.name===selected.value);
+    stepResult.innerHTML=`<p class="stat">Seçilen Dövüş Stili: <b>${selectedStyle.name}</b></p>`;
+    statStyle.textContent=selectedStyle.name;
+  }
+  currentStepIndex++;
+  if(currentStepIndex<steps.length) setTimeout(updateStep,1000);
+  else setTimeout(showFinalResult,1000);
+}
+function updateStep(){
+  const step=steps[currentStepIndex];
+  let label="";
+  if(step==="klan")label="Klan Seçimi";
+  else if(step==="guc")label="Güç Seçimi";
+  else if(step==="hiz")label="Hız Seçimi";
+  else if(step==="karizma")label="Karizma Seçimi";
+  else if(step==="dovusStili")label="Dövüş Stili Seçimi";
+  currentStepLabel.textContent=label;
+  if(step==="dovusStili"&&selectedClan.guaranteedStyle){
+    setupSegmentsForStep(step);
+    segments=segments.filter(s=>s.name===selectedClan.guaranteedStyle);
+  }else setupSegmentsForStep(step);
+  drawWheel(0);
+  stepResult.textContent="";
+}
+function showFinalResult(){
+  let guc=selectedGuc+selectedClan.bonus.g+(selectedStyle?selectedStyle.bonus:0);
+  let hiz=selectedHiz+selectedClan.bonus.h;
+  let karizma=selectedKarizma+selectedClan.bonus.k;
+  guc=Math.max(0,guc); hiz=Math.max(0,hiz); karizma=Math.max(0,karizma);
+  document.querySelector(".card").style.display="none";
+  finalResult.style.display="block";
+  resultContent.innerHTML=`
+    <p class="final-stat"><b>Klan:</b> ${selectedClan.name} (Güç +${selectedClan.bonus.g}, Hız +${selectedClan.bonus.h}, Karizma +${selectedClan.bonus.k})</p>
+    <p class="final-stat"><b>Güç:</b> ${selectedGuc} + ${selectedClan.bonus.g} + ${selectedStyle?selectedStyle.bonus:0} = ${guc}</p>
+    <p class="final-stat"><b>Hız:</b> ${selectedHiz} + ${selectedClan.bonus.h} = ${hiz}</p>
+    <p class="final-stat"><b>Karizma:</b> ${selectedKarizma} + ${selectedClan.bonus.k} = ${karizma}</p>
+    <p class="final-stat"><b>Dövüş Stili:</b> ${selectedStyle?selectedStyle.name+" (+"+selectedStyle.bonus+" Güç)":"Yok"}</p>
+  `;
+}
+function init(){
+  currentStepIndex=0;selectedClan=null;selectedGuc=null;selectedHiz=null;selectedKarizma=null;selectedStyle=null;
+  statClan.textContent="-";statGuc.textContent="-";statHiz.textContent="-";statKarizma.textContent="-";statStyle.textContent="-";
+  finalResult.style.display="none";
+  document.querySelector(".card").style.display="block";
+  updateStep();
+}
+window.onload=init;
+</script>
+</body>
+</html>
