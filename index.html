@@ -1,341 +1,919 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8" />
-<title>Börs game - Sıralı Tek Çark</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>RPG — Karanlık Oda Macerası (Dövüş Ağırlıklı)</title>
 <style>
-  body { 
-    font-family: 'Arial', sans-serif; 
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    color: #eee; 
-    text-align: center;
-    margin: 0;
-    padding: 20px;
-    min-height: 100vh;
-  }
-  .container {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 20px;
-  }
-  .card { 
-    background: rgba(30, 30, 46, 0.95);
-    padding: 30px;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    border: 1px solid #444;
-    margin-bottom: 20px;
-  }
-  h1 {
-    color: #ffd700;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-    margin-bottom: 10px;
-    font-size: 2.5em;
-  }
-  button { 
-    padding: 15px 30px;
-    font-size: 18px;
-    margin: 20px 0;
-    cursor: pointer;
-    border: none;
-    border-radius: 50px;
-    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
-    color: white;
-    font-weight: bold;
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
-    transition: all 0.3s ease;
-  }
-  button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
-  }
-  button:disabled {
-    background: linear-gradient(135deg, #666 0%, #555 100%);
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-  .wheel-container { 
-    margin: 30px auto;
-    position: relative;
-    width: 250px;
-    height: 250px;
-    border: 4px solid #555;
-    border-radius: 50%;
-    background: #222;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    overflow: visible;
-  }
-  .wheel { 
-    width: 100%; 
-    height: 100%; 
-    position: absolute;
-    top: 0;
-    left: 0;
-    border-radius: 50%;
-  }
-  .pointer {
-    position: absolute;
-    top: -15px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 15px solid transparent;
-    border-right: 15px solid transparent;
-    border-top: 20px solid #ff6b6b;
-    z-index: 10;
-  }
-  .current-selection {
-    font-size: 16px;
-    color: #4ecdc4;
-    margin: 10px 0;
-    font-style: italic;
-  }
-  .stat {
-    font-size: 18px;
-    margin: 8px 0;
-    padding: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    border-left: 4px solid #4ecdc4;
-  }
-  .result-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 15px;
-    padding: 20px;
-    margin-top: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  .final-stat {
-    font-size: 20px;
-    margin: 10px 0;
-    padding: 12px;
-    background: rgba(255, 215, 0, 0.1);
-    border-radius: 10px;
-    border-left: 4px solid #ffd700;
-  }
-  #statsPanel {
-    max-width: 600px;
-    margin: 0 auto 30px auto;
-    background: rgba(30,30,46,0.9);
-    padding: 15px 25px;
-    border-radius: 15px;
-    border: 1px solid #444;
-    text-align: left;
-  }
-  #statsPanel h3 {
-    margin-top: 0;
-    color: #ffd700;
+  :root{--bg:#071027;--panel:#0f1626;--accent:#7aa2ff;--muted:#9aa4d6;}
+  body{margin:0;font-family:Inter, system-ui, Arial;background:linear-gradient(180deg,var(--bg),#06102a);color:#eef;padding:18px;display:flex;justify-content:center;}
+  .wrap{width:min(980px,96vw);display:flex;flex-direction:column;}
+  .top{display:flex;gap:18px;align-items:flex-start;margin-bottom:14px;}
+  .card{background:linear-gradient(180deg,var(--panel),#0b1220);border:1px solid rgba(255,255,255,.03);border-radius:12px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.5);}
+  .left{width:360px;text-align:center;}
+  .right{flex:1;}
+
+  /* New styles for game layout */
+  .game-layout{display:flex;flex-direction:column;flex:1;}
+  .game-main-area{flex:1;display:flex;flex-direction:column;}
+  .game-stats-area{background:linear-gradient(180deg,var(--panel),#0b1220);border:1px solid rgba(255,255,255,.03);border-radius:12px;padding:10px;margin-top:14px;}
+  .game-stats-area h3{margin:0 0 8px;font-size:16px;color:var(--accent);}
+  .game-stats-area .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:12px;}
+  .game-stats-area .stat{padding:4px;border-radius:4px;background:rgba(255,255,255,.02);}
+  .game-stats-area .inventory-stat{margin-top:8px;font-size:12px;}
+
+
+  h1{margin:0 0 6px;font-size:18px;color:var(--accent)}
+  button{appearance:none;border:0;background:linear-gradient(180deg,#3f6bff,#2e4fd1);color:white;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+  button.ghost{background:transparent;border:1px solid rgba(255,255,255,.06);color:var(--muted)}
+  .selection-area{margin:12px auto;width:100%;min-height:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .options-list{list-style:none;padding:0;margin:0;width:100%;max-height:200px;overflow-y:auto;text-align:left;}
+  .options-list li{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:center;}
+  .options-list li:last-child{border-bottom:none;}
+  .options-list li.highlight{background-color:rgba(122,162,255,0.2);border-radius:8px;}
+  .options-list li .probability{font-size:12px;color:var(--muted);}
+  .panel-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;justify-content:center}
+  .stat-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+  .stat{background:rgba(255,255,255,.02);padding:8px;border-radius:8px;font-weight:700}
+  .log{height:150px;overflow:auto;background:rgba(255,255,255,.02);border-radius:8px;padding:10px;margin-top:10px;font-size:13px}
+  .game-panel{margin-top:12px}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .muted{color:var(--muted);font-size:13px}
+  .hidden{display:none}
+  .result-card{background:linear-gradient(180deg,#071422,#04101a);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.02);margin-top:10px}
+  .player-hp{color:#ff6b6b;font-weight:bold;}
+  .enemy-hp{color:#ffb86b;font-weight:bold;}
+  @media (max-width:900px){
+    .top{flex-direction:column}
+    .left{width:100%}
+    .game-layout{flex-direction:column;}
+    .game-stats-area{margin-top:14px;}
   }
 </style>
 </head>
 <body>
-  <div class="container">
-    <div class="card">
-      <h1>⚔️ RPG Karakter Oluşturucu ⚔️</h1>
-      <div class="current-selection" id="currentStep">Klan Seçimi</div>
-      <div class="wheel-container">
-        <div class="pointer"></div>
-        <canvas id="wheel" class="wheel" width="250" height="250"></canvas>
+  <div class="wrap">
+    <div class="top" id="characterCreationPanel">
+      <div class="card left">
+        <h1>⚔️ Karakter Oluşturucu</h1>
+        <div id="stepLabel" class="muted">Adım 1/6: Klan</div>
+        <div class="selection-area">
+          <ul id="optionsList" class="options-list">
+            <!-- Options will be rendered here -->
+          </ul>
+        </div>
+        <div class="panel-row">
+          <button id="selectBtn">Seç</button>
+          <button id="resetBtn" class="ghost">Sıfırla</button>
+        </div>
+        <div id="stepResult" class="muted" style="margin-top:10px"></div>
       </div>
-      <button id="spinButton" onclick="spinWheel()">Çarkı Çevir</button>
-      <div id="stepResult"></div>
+
+      <div class="card right">
+        <h1>Karakter Bilgileri</h1>
+        <div class="stat-row">
+          <div class="stat">Klan: <span id="statClan">-</span></div>
+          <div class="stat">Dövüş Stili: <span id="statStyle">-</span></div>
+          <div class="stat">Güç: <span id="statGuc">-</span></div>
+          <div class="stat">Hız: <span id="statHiz">-</span></div>
+          <div class="stat">Karizma: <span id="statKarizma">-</span></div>
+          <div class="stat">Can: <span id="statHP">-</span></div>
+          <div class="stat">Seviye: <span id="statLevel">1</span></div>
+          <div class="stat">EXP: <span id="statExp">0</span></div>
+        </div>
+        <div class="stat" style="margin-top:12px;">Envanter: <span id="inventory">Boş</span></div>
+
+        <div class="game-panel">
+          <div id="gameIntro" style="margin-top:12px">
+            <p class="muted">Tüm seçimleri bitirince <strong>Oyuna Başla</strong> butonu çıkacak.</p>
+            <button id="startGameBtn" class="ghost hidden">Oyuna Başla</button>
+          </div>
+        </div>
+      </div>
     </div>
-    <div id="statsPanel">
-      <h3>Seçilen Statlar</h3>
-      <p><b>Klan:</b> <span id="statClan">-</span></p>
-      <p><b>Güç:</b> <span id="statGuc">-</span></p>
-      <p><b>Hız:</b> <span id="statHiz">-</span></p>
-      <p><b>Karizma:</b> <span id="statKarizma">-</span></p>
-      <p><b>Dövüş Stili:</b> <span id="statStyle">-</span></p>
+
+    <!-- Main Game Area - Hidden until game starts -->
+    <div id="gameContainer" class="game-layout hidden">
+        <div id="adventureArea" class="card game-main-area">
+            <div id="eventDescription" class="result-card"></div>
+            <div class="actions" id="eventActions"></div>
+            <div id="gameLog" class="log"></div>
+        </div>
+
+        <div id="gameStatsDisplay" class="game-stats-area">
+            <h3>Karakter Durumu</h3>
+            <div class="stat-row">
+                <div class="stat">Klan: <span id="gameStatClan">-</span></div>
+                <div class="stat">Dövüş Stili: <span id="gameStatStyle">-</span></div>
+                <div class="stat">Güç: <span id="gameStatGuc">-</span></div>
+                <div class="stat">Hız: <span id="gameStatHiz">-</span></div>
+                <div class="stat">Karizma: <span id="gameStatKarizma">-</span></div>
+                <div class="stat">Can: <span id="gameStatHP">-</span></div>
+                <div class="stat">Seviye: <span id="gameStatLevel">1</span></div>
+                <div class="stat">EXP: <span id="gameStatExp">0</span></div>
+            </div>
+            <div class="inventory-stat">Envanter: <span id="gameInventory">Boş</span></div>
+            <div class="inventory-stat">Kazanılan Dövüş: <span id="fightsWonDisplay">0</span>/10</div>
+        </div>
+
+        <div id="finalPanel" class="card hidden">
+            <h3>Oyun Bitti</h3>
+            <div id="finalLog" class="log"></div>
+            <button id="restartAllBtn">Baştan Başlat</button>
+        </div>
     </div>
-    <div class="card result-card" id="finalResult" style="display: none;">
-      <h2>🎯 Karakter Sonuçları</h2>
-      <div id="resultContent"></div>
-    </div>
+
   </div>
+
 <script>
-// Klanlar ve stiller
+/* ========== DATA ========== */
 const clans = [
-  {name: "Demiralay", chance: 1, bonus: {g: 10, h: 10, k: 10}, guaranteedStyle: null, color: "#ff6b6b"},
-  {name: "Taş", chance: 10, bonus: {g: 3, h: 3, k: 1}, guaranteedStyle: "Karate", color: "#4ecdc4"},
-  {name: "Karahan", chance: 10, bonus: {g: 1, h: 0, k: 5}, guaranteedStyle: "Karate", color: "#45b7d1"},
-  {name: "Eşme", chance: 20, bonus: {g: 2, h: 0, k: 0}, guaranteedStyle: "Boks", color: "#96ceb4"},
-  {name: "Yağmurcu", chance: 20, bonus: {g: 1, h: 0, k: 2}, guaranteedStyle: "Muay Thai", color: "#feca57"},
-  {name: "Tulunay", chance: 20, bonus: {g: 2, h: 0, k: 0}, guaranteedStyle: null, color: "#ff9ff3"},
-  {name: "Çepe", chance: 30, bonus: {g: 0, h: 0, k: 0}, guaranteedStyle: null, color: "#54a0ff"},
-  {name: "Aysu", chance: 40, bonus: {g: -2, h: -2, k: -2}, guaranteedStyle: null, color: "#5f27cd"}
+  {name:"Demiralay", weight:1, bonus:{g:10,h:10,k:10}, guaranteedStyle:null},
+  {name:"Taş",       weight:10, bonus:{g:3,h:3,k:1}, guaranteedStyle:"Karate"},
+  {name:"Karahan",   weight:10, bonus:{g:1,h:0,k:5}, guaranteedStyle:null},
+  {name:"Eşme",      weight:20, bonus:{g:2,h:0,k:0}, guaranteedStyle:"Boks"},
+  {name:"Yağmurcu",  weight:20, bonus:{g:1,h:0,k:2}, guaranteedStyle:"Muay Thai"},
+  {name:"Tulunay",   weight:20, bonus:{g:2,h:0,k:0}, guaranteedStyle:null},
+  {name:"Çepe",      weight:30, bonus:{g:0,h:0,k:0}, guaranteedStyle:null},
+  {name:"Aysu",      weight:40, bonus:{g:-2,h:-2,k:-2}, guaranteedStyle:null}
 ];
 const fightingStyles = [
-  {name: "Karate", chance: 10, bonus: 2, color: "#ff6b6b"},
-  {name: "Boks", chance: 10, bonus: 2, color: "#4ecdc4"},
-  {name: "Muay Thai", chance: 10, bonus: 2, color: "#45b7d1"},
-  {name: "Hiçbir Stil", chance: 70, bonus: 0, color: "#888"}
+  {name:"Karate", weight:10, bonus:2, type:"guc"}, // Bonus applies to strength
+  {name:"Boks",   weight:10, bonus:2, type:"guc"},
+  {name:"Muay Thai", weight:10, bonus:2, type:"guc"},
+  {name:"Hiçbir Stil", weight:70, bonus:0, type:"none"}
 ];
-let segments = [];
-const wheelCanvas = document.getElementById("wheel");
-const spinButton = document.getElementById("spinButton");
-const currentStepLabel = document.getElementById("currentStep");
+
+// Enemy fighting styles with their stat bonuses
+const enemyFightingStyles = [
+    {name: "Full Boxing", bonus: {atk: 2, def: 1, speed: 0}}, // atk for strength, def for defense, speed for speed
+    {name: "Hızlı Tekme", bonus: {atk: 0, def: 0, speed: 3}},
+    {name: "Savunmacı", bonus: {atk: 0, def: 2, speed: 0}},
+    {name: "Dengesiz", bonus: {atk: 3, def: -1, speed: 0}}, // High attack, low defense
+    {name: "Normal", bonus: {atk: 0, def: 0, speed: 0}}
+];
+
+
+function statSegments(){
+  return [
+    {label:"1", value:1, weight:20}, {label:"2", value:2, weight:18},
+    {label:"3", value:3, weight:15}, {label:"4", value:4, weight:12},
+    {label:"5", value:5, weight:10}, {label:"6", value:6, weight:8},
+    {label:"7", value:7, weight:6},  {label:"8", value:8, weight:5},
+    {label:"9", value:9, weight:4},  {label:"10",value:10,weight:2}
+  ];
+}
+
+function trainingSegments(){
+  const stats = ["güc","hız","karizma"];
+  const arr = [];
+  for(const s of stats){
+    for(let v=1; v<=4; v++){
+      arr.push({label:`${s.toUpperCase()} +${v}`, stat:s, amount:v, weight:1});
+    }
+  }
+  return arr;
+}
+
+const items = [
+    {name: "Sağlık İksiri", type: "consumable", effect: {hp: 10}, description: "10 Can yeniler."},
+    {name: "Güç Bilekliği", type: "permanent", effect: {g: 1}, description: "Gücünü kalıcı olarak 1 artırır."},
+    {name: "Hız Botları", type: "permanent", effect: {h: 1}, description: "Hızını kalıcı olarak 1 artırır."},
+    {name: "Karizma Kolyesi", type: "permanent", effect: {k: 1}, description: "Karizmanı kalıcı olarak 1 artırır."}
+];
+
+const enemyNames = [
+    {name: "YiğitAysu", minZone: 1, maxZone: 2},
+    {name: "YiğitAysuMommy", minZone: 2, maxZone: 3},
+    {name: "YiğitAysuDaddy", minZone: 3, maxZone: 4},
+    {name: "YiğitAysuMommyAndDaddy", minZone: 4, maxZone: 5}
+];
+
+// Location-specific event types
+const locationEvents = {
+    "Okul": [
+        {name: "Dövüş", weight: 70, handler: "startBattle"},
+        {name: "Eşya Bulma", weight: 15, handler: "findItem"},
+        {name: "Hikaye", weight: 15, handler: "storyEvent"}
+    ],
+    "Fırıngo Önü": [
+        {name: "Dövüş", weight: 80, handler: "startBattle"},
+        {name: "Eşya Bulma", weight: 20, handler: "findItem"}
+    ],
+    "NMC'nin Yaylası": [
+        {name: "Dinlenme", weight: 90, handler: "rest"}, // Increased rest chance
+        {name: "Training", weight: 10, handler: "openTrainingSelection"} // Training chance 10%
+    ],
+    "Sokak": [
+        {name: "Dövüş", weight: 60, handler: "startBattle"},
+        {name: "Eşya Bulma", weight: 30, handler: "findItem"},
+        {name: "Hikaye", weight: 10, handler: "storyEvent"}
+    ],
+    "Berat Hocamın Antalya'daki Tatil Köyü": [
+        {name: "Final Boss", weight: 100, handler: "startFinalBossBattle"}
+    ]
+};
+
+
+/* ========== UI refs ========== */
+const characterCreationPanel = document.getElementById("characterCreationPanel");
+const selectBtn = document.getElementById("selectBtn");
+const resetBtn = document.getElementById("resetBtn");
+const stepLabel = document.getElementById("stepLabel");
 const stepResult = document.getElementById("stepResult");
-const finalResult = document.getElementById("finalResult");
-const resultContent = document.getElementById("resultContent");
-const statClan = document.getElementById("statClan");
-const statGuc = document.getElementById("statGuc");
-const statHiz = document.getElementById("statHiz");
-const statKarizma = document.getElementById("statKarizma");
-const statStyle = document.getElementById("statStyle");
-const steps = ["klan", "guc", "hiz", "karizma", "dovusStili"];
+const optionsList = document.getElementById("optionsList");
+
+// Character creation stats display
+const statClanEl = document.getElementById("statClan");
+const statGucEl = document.getElementById("statGuc");
+const statHizEl = document.getElementById("statHiz");
+const statKarizmaEl = document.getElementById("statKarizma");
+const statStyleEl = document.getElementById("statStyle");
+const statHPEl = document.getElementById("statHP");
+const statLevel = document.getElementById("statLevel");
+const statExp = document.getElementById("statExp");
+const inventoryEl = document.getElementById("inventory");
+
+// Game play stats display (smaller, at bottom right)
+const gameContainer = document.getElementById("gameContainer");
+const gameStatsDisplay = document.getElementById("gameStatsDisplay");
+const gameStatClanEl = document.getElementById("gameStatClan");
+const gameStatGucEl = document.getElementById("gameStatGuc");
+const gameStatHizEl = document.getElementById("gameStatHiz");
+const gameStatKarizmaEl = document.getElementById("gameStatKarizma");
+const gameStatStyleEl = document.getElementById("gameStatStyle");
+const gameStatHPEl = document.getElementById("gameStatHP");
+const gameStatLevel = document.getElementById("gameStatLevel");
+const gameStatExp = document.getElementById("gameStatExp");
+const gameInventoryEl = document.getElementById("gameInventory");
+const fightsWonDisplay = document.getElementById("fightsWonDisplay");
+
+
+const startGameBtn = document.getElementById("startGameBtn");
+const adventureArea = document.getElementById("adventureArea");
+const eventDescriptionDiv = document.getElementById("eventDescription");
+const eventActionsDiv = document.getElementById("eventActions");
+const gameLog = document.getElementById("gameLog");
+
+const finalPanel = document.getElementById("finalPanel");
+const finalLog = document.getElementById("finalLog");
+const restartAllBtn = document.getElementById("restartAllBtn");
+
+/* ========== STATE ========== */
+const steps = ["klan","guc","hiz","karizma","hp","dovusStili"];
 let currentStepIndex = 0;
-let selectedClan = null, selectedGuc = null, selectedHiz = null, selectedKarizma = null, selectedStyle = null;
-let spinning = false, currentRotation = 0;
-function weightedRandom(arr) {
-  let total = arr.reduce((acc, o) => acc + o.chance, 0);
-  let r = Math.random() * total;
-  for (let i = 0; i < arr.length; i++) {
-    if (r < arr[i].chance) return arr[i];
-    r -= arr[i].chance;
+let currentOptions = [];
+let selecting = false;
+let selectedClan=null, selectedGuc=null, selectedHiz=null, selectedKarizma=null, selectedHP=null, selectedStyle=null;
+
+/* player runtime */
+let player = {g:0,h:0,k:0, style:null, level:1, exp:0, HP:0, maxHP:0, inventory:[]};
+let currentEnemy = null;
+let consecutiveEscapes = 0;
+let fightsWon = 0; // Track won fights
+let currentZone = 1; // Zone will now be tied to overall game progress, not location
+
+// Store original selectBtn.onclick for restoring after training
+let originalSelectBtnOnClick = null;
+
+/* ========== HELPERS ========== */
+function pickWeightedIndex(arr){
+  const total = arr.reduce((s,x)=>s+(x.weight||0),0);
+  let r = Math.random()*total;
+  for(let i=0;i<arr.length;i++){
+    if(r < (arr[i].weight||0)) return i;
+    r -= (arr[i].weight||0);
   }
-  return arr[arr.length - 1];
+  return arr.length-1;
 }
-function setupSegmentsForStep(step) {
-  segments = [];
-  if (step === "klan") segments = clans.map(c=>({name:c.name,value:c.name,chance:c.chance,color:c.color}));
-  else if (step==="guc"||step==="hiz"||step==="karizma")
-    for(let i=1;i<=10;i++)
-      segments.push({name:i.toString(),value:i,chance:1,color:`hsl(${i*36},80%,60%)`});
-  else if(step==="dovusStili")
-    segments = fightingStyles.map(s=>({name:s.name,value:s.name,chance:s.chance,color:s.color}));
+
+function getOptionsForStep(step){
+  if(step === "klan"){
+    return clans.map(c=>({label:c.name, value:c, weight:c.weight}));
+  } else if(step === "dovusStili"){
+    return fightingStyles.map(s=>({label:s.name, value:s, weight:s.weight}));
+  } else if(step === "hp" || step === "guc" || step === "hiz" || step === "karizma"){
+    return statSegments();
+  } else {
+    return [];
+  }
 }
-function drawWheel(rotationDeg=0) {
-  const ctx = wheelCanvas.getContext("2d");
-  ctx.clearRect(0,0,250,250);
-  const centerX = 125, centerY = 125, radius = 120;
-  const segmentCount = segments.length;
-  const anglePerSegment = 2*Math.PI/segmentCount;
-  ctx.save();
-  ctx.translate(centerX, centerY);
-  ctx.rotate(rotationDeg * Math.PI/180);
-  // Segmentler
-  for(let i=0;i<segmentCount;i++){
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(0,0);
-    ctx.arc(0,0,radius,i*anglePerSegment,(i+1)*anglePerSegment);
-    ctx.closePath();
-    ctx.fillStyle = segments[i].color;
-    ctx.fill();
-    ctx.restore();
-  }
-  // Segment isimleri
-  ctx.font="bold 14px Arial";
-  ctx.textAlign="center";
-  ctx.textBaseline="middle";
-  for(let i=0;i<segmentCount;i++){
-    const angle = (i + 0.5) * anglePerSegment;
-    const x = Math.cos(angle) * 80;
-    const y = Math.sin(angle) * 80;
-    ctx.save();
-    ctx.rotate(angle);
-    ctx.fillStyle="#fff";
-    ctx.shadowColor="#000";
-    ctx.shadowBlur=4;
-    ctx.rotate(-angle);
-    ctx.fillText(segments[i].name, x, y);
-    ctx.restore();
-  }
-  ctx.restore();
+
+function renderOptions(options){
+  optionsList.innerHTML = "";
+  const totalWeight = options.reduce((sum, opt) => sum + (opt.weight || 0), 0);
+
+  options.forEach(opt => {
+    const li = document.createElement("li");
+    const probability = totalWeight > 0 ? ((opt.weight / totalWeight) * 100).toFixed(1) : 0;
+    li.innerHTML = `<span>${opt.label}</span> <span class="probability">${probability}%</span>`;
+    li.dataset.value = JSON.stringify(opt.value);
+    optionsList.appendChild(li);
+  });
 }
-function spinWheel() {
-  if(spinning) return;
-  spinning = true; spinButton.disabled=true; stepResult.textContent="";
-  const segmentCount=segments.length,anglePerSegment=360/segmentCount;
-  let selectedSegment;
-  if(currentStepIndex===0||currentStepIndex===4)
-    selectedSegment=weightedRandom(segments);
-  else selectedSegment=segments[Math.floor(Math.random()*segmentCount)];
-  const selectedIndex=segments.findIndex(s=>s===selectedSegment);
-  const targetRotation=360*5+(360-selectedIndex*anglePerSegment-anglePerSegment/2);
-  let start=null; const duration=3000;
-  function animate(ts){
-    if(!start)start=ts;
-    const elapsed=ts-start;
-    const progress=Math.min(elapsed/duration,1);
-    const easeOut=1-Math.pow(1-progress,3);
-    currentRotation=easeOut*targetRotation;
-    drawWheel(currentRotation);
-    if(progress<1)requestAnimationFrame(animate);
-    else{spinning=false;spinButton.disabled=false;handleSelection(selectedSegment);}
-  }
-  requestAnimationFrame(animate);
+
+function animateSelection(selectedIndex, callback){
+  const items = Array.from(optionsList.children);
+  let currentIndex = 0;
+  let animationCount = 0;
+  const maxAnimations = items.length * 3;
+
+  const interval = setInterval(() => {
+    if (animationCount >= maxAnimations + selectedIndex) {
+      clearInterval(interval);
+      items.forEach(item => item.classList.remove("highlight"));
+      items[selectedIndex].classList.add("highlight");
+      setTimeout(callback, 500);
+      return;
+    }
+
+    items.forEach(item => item.classList.remove("highlight"));
+    items[currentIndex].classList.add("highlight");
+
+    currentIndex = (currentIndex + 1) % items.length;
+    animationCount++;
+  }, 80);
 }
-function handleSelection(selected){
-  const step=steps[currentStepIndex];
-  if(step==="klan"){
-    selectedClan=clans.find(c=>c.name===selected.value);
-    stepResult.innerHTML=`<p class="stat">Seçilen Klan: <b>${selectedClan.name}</b></p>`;
-    statClan.textContent=selectedClan.name;
-  }else if(step==="guc"){
-    selectedGuc=selected.value;
-    stepResult.innerHTML=`<p class="stat">Seçilen Güç: <b>${selectedGuc}</b></p>`;
-    statGuc.textContent=selectedGuc;
-  }else if(step==="hiz"){
-    selectedHiz=selected.value;
-    stepResult.innerHTML=`<p class="stat">Seçilen Hız: <b>${selectedHiz}</b></p>`;
-    statHiz.textContent=selectedHiz;
-  }else if(step==="karizma"){
-    selectedKarizma=selected.value;
-    stepResult.innerHTML=`<p class="stat">Seçilen Karizma: <b>${selectedKarizma}</b></p>`;
-    statKarizma.textContent=selectedKarizma;
-  }else if(step==="dovusStili"){
-    selectedStyle=fightingStyles.find(s=>s.name===selected.value);
-    stepResult.innerHTML=`<p class="stat">Seçilen Dövüş Stili: <b>${selectedStyle.name}</b></p>`;
-    statStyle.textContent=selectedStyle.name;
+
+/* ========== Character Creation Steps ========== */
+function handleSelection(seg, isGuaranteed = false){
+  const step = steps[currentStepIndex];
+  let resultText = "";
+
+  if(step === "klan"){
+    selectedClan = seg.value;
+    statClanEl.textContent = selectedClan.name;
+    resultText = `Klan: ${selectedClan.name}`;
+  } else if(step === "guc"){
+    selectedGuc = seg.value;
+    statGucEl.textContent = selectedGuc;
+    resultText = `Güç: ${selectedGuc}`;
+  } else if(step === "hiz"){
+    selectedHiz = seg.value;
+    statHizEl.textContent = selectedHiz;
+    resultText = `Hız: ${selectedHiz}`;
+  } else if(step === "karizma"){
+    selectedKarizma = seg.value;
+    statKarizmaEl.textContent = selectedKarizma;
+    resultText = `Karizma: ${selectedKarizma}`;
+  } else if(step === "hp"){
+    selectedHP = seg.value;
+    statHPEl.textContent = selectedHP;
+    resultText = `Başlangıç Can: ${selectedHP}`;
   }
+  else if(step === "dovusStili"){
+    selectedStyle = seg.value;
+    statStyleEl.textContent = selectedStyle.name;
+    resultText = `Dövüş Stili: ${selectedStyle.name}`;
+  }
+  stepResult.textContent = isGuaranteed ? `Garanti Stil: ${resultText.split(':')[1].trim()}` : resultText;
+
   currentStepIndex++;
-  if(currentStepIndex<steps.length) setTimeout(updateStep,1000);
-  else setTimeout(showFinalResult,1000);
+  if(currentStepIndex < steps.length){
+    setTimeout(updateStep, 1000);
+  } else {
+    setTimeout(finalizeCreation, 1000);
+  }
 }
+
 function updateStep(){
-  const step=steps[currentStepIndex];
-  let label="";
-  if(step==="klan")label="Klan Seçimi";
-  else if(step==="guc")label="Güç Seçimi";
-  else if(step==="hiz")label="Hız Seçimi";
-  else if(step==="karizma")label="Karizma Seçimi";
-  else if(step==="dovusStili")label="Dövüş Stili Seçimi";
-  currentStepLabel.textContent=label;
-  if(step==="dovusStili"&&selectedClan.guaranteedStyle){
-    setupSegmentsForStep(step);
-    segments=segments.filter(s=>s.name===selectedClan.guaranteedStyle);
-  }else setupSegmentsForStep(step);
-  drawWheel(0);
-  stepResult.textContent="";
+  const step = steps[currentStepIndex];
+  const labels = {
+    klan:"Adım 1/6: Klan",
+    guc:"Adım 2/6: Güç",
+    hiz:"Adım 3/6: Hız",
+    karizma:"Adım 4/6: Karizma",
+    hp:"Adım 5/6: Başlangıç Can",
+    dovusStili:"Adım 6/6: Dövüş Stili"
+  };
+  stepLabel.textContent = labels[step] || "—";
+  stepResult.textContent = "";
+  selectBtn.disabled = false;
+  selecting = false;
+
+  if(step === "dovusStili" && selectedClan && selectedClan.guaranteedStyle){
+    const gs = fightingStyles.find(s=> s.name === selectedClan.guaranteedStyle);
+    if(gs){
+      selectBtn.disabled = true;
+      selecting = true;
+      const options = getOptionsForStep(step);
+      const guaranteedIndex = options.findIndex(opt => opt.value.name === gs.name);
+      if (guaranteedIndex !== -1) {
+        renderOptions(options);
+        animateSelection(guaranteedIndex, () => handleSelection({value: gs}, true));
+      } else {
+        handleSelection({value: gs}, true);
+      }
+      return;
+    }
+  }
+
+  currentOptions = getOptionsForStep(step);
+  renderOptions(currentOptions);
 }
-function showFinalResult(){
-  let guc=selectedGuc+selectedClan.bonus.g+(selectedStyle?selectedStyle.bonus:0);
-  let hiz=selectedHiz+selectedClan.bonus.h;
-  let karizma=selectedKarizma+selectedClan.bonus.k;
-  guc=Math.max(0,guc); hiz=Math.max(0,hiz); karizma=Math.max(0,karizma);
-  document.querySelector(".card").style.display="none";
-  finalResult.style.display="block";
-  resultContent.innerHTML=`
-    <p class="final-stat"><b>Klan:</b> ${selectedClan.name} (Güç +${selectedClan.bonus.g}, Hız +${selectedClan.bonus.h}, Karizma +${selectedClan.bonus.k})</p>
-    <p class="final-stat"><b>Güç:</b> ${selectedGuc} + ${selectedClan.bonus.g} + ${selectedStyle?selectedStyle.bonus:0} = ${guc}</p>
-    <p class="final-stat"><b>Hız:</b> ${selectedHiz} + ${selectedClan.bonus.h} = ${hiz}</p>
-    <p class="final-stat"><b>Karizma:</b> ${selectedKarizma} + ${selectedClan.bonus.k} = ${karizma}</p>
-    <p class="final-stat"><b>Dövüş Stili:</b> ${selectedStyle?selectedStyle.name+" (+"+selectedStyle.bonus+" Güç)":"Yok"}</p>
-  `;
+
+function finalizeCreation(){
+  if(!selectedStyle) {
+    selectedStyle = fightingStyles[pickWeightedIndex(fightingStyles)];
+  }
+  player.g = (selectedGuc || 1) + (selectedClan?.bonus?.g || 0) + (selectedStyle?.bonus || 0);
+  player.h = (selectedHiz || 1) + (selectedClan?.bonus?.h || 0);
+  player.k = (selectedKarizma || 1) + (selectedClan?.bonus?.k || 0);
+  player.style = selectedStyle?.name || "Yok";
+  player.level = 1; player.exp = 0;
+  // Base HP is 10, plus selectedHP, plus bonus from stats
+  player.maxHP = 10 + (selectedHP || 0) + Math.floor((player.g + player.h + player.k)/3);
+  player.HP = player.maxHP;
+
+  // Apply Karahan clan bonus for School location
+  if (selectedClan.name === "Karahan") {
+      player.g += 3; // Initial bonus, can be applied here or when entering school
+      gameLogInsert("Karahan klanı olduğun için Okul'da +3 Güç bonusu kazandın!");
+  }
+
+
+  statGucEl.textContent = player.g;
+  statHizEl.textContent = player.h;
+  statKarizmaEl.textContent = player.k;
+  statClanEl.textContent = selectedClan.name;
+  statStyleEl.textContent = player.style;
+  statHPEl.textContent = `${player.HP}/${player.maxHP}`;
+  statLevel.textContent = player.level;
+  statExp.textContent = player.exp;
+
+  stepLabel.textContent = "Oluşturma Tamamlandı";
+  stepResult.textContent = "Karakter hazır — oyuna başla!";
+  selectBtn.disabled = true;
+  startGameBtn.classList.remove("hidden");
+  startGameBtn.addEventListener("click", startGame, {once:true});
 }
+
+/* Event Listeners for Character Creation */
+resetBtn.addEventListener("click", init);
+
+// Define the original onclick function for selectBtn globally
+originalSelectBtnOnClick = () => {
+  if (selecting) return;
+  selecting = true;
+  selectBtn.disabled = true;
+  stepResult.textContent = "";
+
+  const selectedIndex = pickWeightedIndex(currentOptions);
+  animateSelection(selectedIndex, () => {
+    handleSelection(currentOptions[selectedIndex]);
+  });
+};
+selectBtn.addEventListener("click", originalSelectBtnOnClick);
+
+
+/* ========== GAME LOOP (Adventure) ========== */
+function startGame(){
+  characterCreationPanel.classList.add("hidden");
+  gameContainer.classList.remove("hidden");
+
+  document.getElementById("gameIntro").classList.add("hidden");
+  gameLog.innerHTML = "";
+  fightsWon = 0; // Reset fights won
+  currentZone = 1;
+  gameLogInsert("Karanlık bir odada gözlerini açtın. Nereye gideceksin?");
+  updatePlayerStatsUI();
+  updateFightsWonDisplay();
+  renderLocationActions();
+}
+
+function renderLocationActions(){
+  eventActionsDiv.innerHTML = "";
+  const locations = ["Okul", "Fırıngo Önü", "NMC'nin Yaylası", "Sokak"];
+
+  locations.forEach(loc => {
+    const btn = document.createElement("button");
+    btn.textContent = loc;
+    btn.onclick = () => exploreLocation(loc);
+    eventActionsDiv.appendChild(btn);
+  });
+
+  if (fightsWon >= 10) {
+    const finalBossLocBtn = document.createElement("button");
+    finalBossLocBtn.textContent = "Berat Hocamın Antalya'daki Tatil Köyü";
+    finalBossLocBtn.onclick = () => exploreLocation("Berat Hocamın Antalya'daki Tatil Köyü");
+    eventActionsDiv.appendChild(finalBossLocBtn);
+  }
+  eventDescriptionDiv.innerHTML = "";
+}
+
+function exploreLocation(locationName){
+  gameLogInsert(`--- ${locationName} konumuna gittin. ---`);
+  eventDescriptionDiv.innerHTML = `<strong>${locationName}</strong>`;
+
+  const eventsForLocation = locationEvents[locationName];
+  if (!eventsForLocation) {
+      gameLogInsert("Bu konumda henüz bir olay tanımlanmamış.");
+      renderLocationActions();
+      return;
+  }
+
+  const eventIndex = pickWeightedIndex(eventsForLocation);
+  const event = eventsForLocation[eventIndex];
+
+  gameLogInsert(`Bir ${event.name} olayıyla karşılaştın.`);
+
+  // Special handling for NMC's Yaylası and Final Boss location
+  if (locationName === "NMC'nin Yaylası") {
+      if (event.handler === "openTrainingSelection") {
+          openTrainingSelection(); // Directly open training
+      } else if (event.handler === "rest") {
+          rest();
+      }
+  } else if (locationName === "Berat Hocamın Antalya'daki Tatil Köyü") {
+      startFinalBossBattle();
+  }
+  else { // Normal event handling for other locations
+      if (event.handler === "startBattle") {
+          startBattle();
+      } else if (event.handler === "findItem") {
+          findItem();
+      } else if (event.handler === "rest") {
+          rest();
+      } else if (event.handler === "storyEvent") {
+          storyEvent();
+      }
+  }
+}
+
+function generateEnemy(zone, isBoss = false){
+  const zoneScale = [0,0.6,1.0,1.6,2.3,3.0];
+  const scale = zoneScale[Math.min(zone, zoneScale.length - 1)];
+  let atk, def, hp, name;
+
+  if (isBoss) {
+      name = "Berat Hoca (Final Boss)";
+      atk = Math.max(10, Math.floor(15 + scale*5 + Math.random()*5));
+      def = Math.max(5, Math.floor(10 + scale*3 + Math.random()*3));
+      hp = Math.max(50, Math.floor(70 + scale*20 + Math.random()*20));
+  } else {
+      atk = Math.max(1, Math.floor(2 + scale*2 + Math.random()*2));
+      def = Math.max(0, Math.floor(1 + scale*1 + Math.random()*1));
+      hp = Math.max(5, Math.floor(10 + scale*5 + Math.random()*5));
+
+      let enemyNameCandidates = enemyNames.filter(e => zone >= e.minZone && zone <= e.maxZone);
+      if (enemyNameCandidates.length === 0) {
+          enemyNameCandidates = enemyNames; // Fallback
+      }
+      name = enemyNameCandidates[Math.floor(Math.random() * enemyNameCandidates.length)].name;
+
+      // Apply random enemy fighting style
+      const randomStyle = enemyFightingStyles[Math.floor(Math.random() * enemyFightingStyles.length)];
+      name = `${randomStyle.name} ${name}`; // Combine name and style
+      atk += (randomStyle.bonus.atk || 0);
+      def += (randomStyle.bonus.def || 0);
+      hp += (randomStyle.bonus.speed || 0); // Using speed for HP bonus for simplicity, can be adjusted
+  }
+
+  return {name, atk, def, HP: hp, maxHP: hp, zone};
+}
+
+function startBattle(){
+  currentEnemy = generateEnemy(currentZone);
+  eventDescriptionDiv.innerHTML = `<strong>Bölge ${currentEnemy.zone} — Karşında: ${currentEnemy.name}</strong>
+    <p>Can: <span class="enemy-hp">${currentEnemy.HP}/${currentEnemy.maxHP}</span> · Saldırı: ${currentEnemy.atk} · Savunma: ${currentEnemy.def}</p>`;
+  gameLogInsert(`${currentEnemy.name} sana saldırmak için yaklaşıyor!`);
+  renderBattleActions();
+}
+
+function startFinalBossBattle(){
+    currentEnemy = generateEnemy(currentZone, true); // Generate boss
+    eventDescriptionDiv.innerHTML = `<strong>SON DÖVÜŞ — Karşında: ${currentEnemy.name}</strong>
+        <p>Can: <span class="enemy-hp">${currentEnemy.HP}/${currentEnemy.maxHP}</span> · Saldırı: ${currentEnemy.atk} · Savunma: ${currentEnemy.def}</p>`;
+    gameLogInsert(`Berat Hoca'nın tatil köyüne ulaştın! Final Boss: ${currentEnemy.name} seni bekliyor!`);
+    renderBattleActions();
+}
+
+
+function renderBattleActions(){
+  eventActionsDiv.innerHTML = "";
+  const atkBtn = document.createElement("button"); atkBtn.textContent = "Saldır"; atkBtn.onclick = ()=>performAttack();
+  const runBtn = document.createElement("button"); runBtn.textContent = "Kaç"; runBtn.onclick = ()=>attemptEscape();
+  const talkBtn = document.createElement("button"); talkBtn.textContent = "İkna Et"; talkBtn.onclick = ()=>attemptPersuade();
+  eventActionsDiv.appendChild(atkBtn); eventActionsDiv.appendChild(runBtn); eventActionsDiv.appendChild(talkBtn);
+}
+
+function chanceSuccess(playerStat, enemyStat){
+  if(enemyStat <= 0) return Math.random() < 0.9;
+  let p = playerStat / (playerStat + enemyStat);
+  p = Math.max(0.05, Math.min(0.95, p));
+  return Math.random() < p;
+}
+
+function calculateDamage(attackerStat, defenderStat){
+    const baseDamage = Math.max(1, attackerStat / 2);
+    const defenseReduction = Math.max(0, defenderStat / 4);
+    return Math.max(1, Math.floor(baseDamage - defenseReduction + Math.random()*2));
+}
+
+function performAttack(){
+  disableEventActions(true);
+  const playerDamage = calculateDamage(player.g, currentEnemy.def);
+  currentEnemy.HP -= playerDamage;
+  gameLogInsert(`Saldırdın! ${currentEnemy.name} ${playerDamage} hasar aldı. (Can: <span class="enemy-hp">${currentEnemy.HP}/${currentEnemy.maxHP}</span>)`);
+
+  if(currentEnemy.HP <= 0){
+    gameLogInsert(`${currentEnemy.name} yenildi!`);
+    onEnemyDefeated(false);
+  } else {
+    const enemyDamage = calculateDamage(currentEnemy.atk, player.g);
+    player.HP -= enemyDamage;
+    gameLogInsert(`${currentEnemy.name} sana saldırdı! ${enemyDamage} hasar aldın. (Can: <span class="player-hp">${player.HP}/${player.maxHP}</span>)`);
+    updatePlayerStatsUI();
+    if(player.HP <= 0) return onPlayerDefeated();
+    disableEventActions(false);
+  }
+}
+
+function attemptEscape(){
+  disableEventActions(true);
+  const success = chanceSuccess(player.h, currentEnemy.atk);
+  if(success){
+    consecutiveEscapes++;
+    gameLogInsert(`Kaçış başarılı! (ardışık kaçış: ${consecutiveEscapes})`);
+    onEnemyEscaped();
+  } else {
+    consecutiveEscapes = 0;
+    const enemyDamage = calculateDamage(currentEnemy.atk, player.h / 2);
+    player.HP -= enemyDamage;
+    gameLogInsert(`Kaçış başarısız! ${currentEnemy.name} sana saldırdı ve ${enemyDamage} hasar aldın. (Can: <span class="player-hp">${player.HP}/${player.maxHP}</span>)`);
+    updatePlayerStatsUI();
+    if(player.HP <= 0) return onPlayerDefeated();
+    disableEventActions(false);
+  }
+}
+
+function attemptPersuade(){
+  disableEventActions(true);
+  const success = chanceSuccess(player.k, currentEnemy.atk);
+  if(success){
+    gameLogInsert(`İkna başarılı! ${currentEnemy.name} geri çekildi.`);
+    onEnemyDefeated(true);
+  } else {
+    const enemyDamage = calculateDamage(currentEnemy.atk, player.k / 2);
+    player.HP -= enemyDamage;
+    gameLogInsert(`İkna başarısız! ${currentEnemy.name} ikna olmadı ve ${enemyDamage} hasar aldın. (Can: <span class="player-hp">${player.HP}/${player.maxHP}</span>)`);
+    updatePlayerStatsUI();
+    if(player.HP <= 0) return onPlayerDefeated();
+    disableEventActions(false);
+  }
+}
+
+/* After Battle/Event Outcomes */
+function onEnemyDefeated(byPersuade){
+  consecutiveEscapes = 0;
+  player.exp += 10 + currentEnemy.zone * 2;
+  gameLogInsert(`Düşman alt edildi. EXP +${10 + currentEnemy.zone * 2} (toplam ${player.exp})`);
+  updatePlayerStatsUI();
+
+  if (currentEnemy.name === "Berat Hoca (Final Boss)") {
+      gameLogInsert("Tebrikler! Berat Hoca'yı yendin ve oyunu tamamladın!");
+      endGame(true);
+      return;
+  }
+
+  fightsWon++; // Increment fights won
+  updateFightsWonDisplay();
+
+  // Training chance after battle: 7%
+  if(Math.random() < 0.07){
+    gameLogInsert("Şanslısın! Dövüş sonrası training seçimi açıldı.");
+    openTrainingSelection();
+  } else {
+    proceedAfterEvent();
+  }
+}
+
+function onEnemyEscaped(){
+  if(consecutiveEscapes >= 2){
+    gameLogInsert("2 kere üst üste kaçtın. %20 şansla training seçimi açılacak...");
+    if(Math.random() < 0.20){
+      gameLogInsert("Training seçimi aktif!");
+      openTrainingSelection();
+      return;
+    } else {
+      gameLogInsert("Training seçimi gelmedi.");
+      consecutiveEscapes = 0;
+    }
+  }
+  proceedAfterEvent();
+}
+
+function onPlayerDefeated(){
+  gameLogInsert("Yenildin. Oyun bitti.");
+  endGame(false);
+}
+
+function findItem(){
+    const itemIndex = Math.floor(Math.random() * items.length);
+    const foundItem = items[itemIndex];
+    gameLogInsert(`Bir ${foundItem.name} buldun! ${foundItem.description}`);
+    player.inventory.push(foundItem);
+    updateInventoryUI();
+
+    if (foundItem.type === "permanent") {
+        if (foundItem.effect.g) player.g += foundItem.effect.g;
+        if (foundItem.effect.h) player.h += foundItem.effect.h;
+        if (foundItem.effect.k) player.k += foundItem.effect.k;
+        gameLogInsert(`${foundItem.name} etkileri uygulandı.`);
+        updatePlayerStatsUI();
+    } else if (foundItem.type === "consumable") {
+        if (foundItem.effect.hp) {
+            player.HP = Math.min(player.maxHP, player.HP + foundItem.effect.hp);
+            gameLogInsert(`${foundItem.name} kullanıldı. Canın ${foundItem.effect.hp} arttı.`);
+            updatePlayerStatsUI();
+        }
+        player.inventory = player.inventory.filter(item => item !== foundItem);
+        updateInventoryUI();
+    }
+    proceedAfterEvent();
+}
+
+function rest(){
+    const hpRestored = Math.floor(player.maxHP * 0.25);
+    player.HP = Math.min(player.maxHP, player.HP + hpRestored);
+    gameLogInsert(`Dinlendin ve ${hpRestored} Can yeniledin. (Can: <span class="player-hp">${player.HP}/${player.maxHP}</span>)`);
+    updatePlayerStatsUI();
+    proceedAfterEvent();
+}
+
+function storyEvent(){
+    const stories = [
+        "Uzaklardan gelen garip sesler duyuyorsun. Ne anlama geldiğini bilmiyorsun.",
+        "Duvarlarda eski semboller var. Onları çözemiyorsun ama bir anlamı olmalı.",
+        "Soğuk bir rüzgar esiyor, sanki bir şey seni izliyormuş gibi hissediyorsun.",
+        "Yerde paslı bir anahtar buldun, ama hangi kapıyı açtığını bilmiyorsun.",
+        "Eski bir harita parçası buldun, üzerinde 'Gizli Geçit' yazıyor. Ama nerede olduğunu anlamıyorsun.",
+        "Bir köşede unutulmuş bir günlük buldun. İçinde korkunç yaratıklardan bahsediliyor.",
+        "Duvarlarda kanlı el izleri var. Buradan birileri geçmiş olmalı, ama nereye?",
+        "Garip bir koku alıyorsun. Çürümüş et mi, yoksa eski bir büyü mü?",
+        "Tavan çökmüş, ilerlemek için yeni bir yol bulmalısın.",
+        "Bir fısıltı duyuyorsun, adını söylüyor gibi. Yoksa sadece hayal mi?"
+    ];
+    const story = stories[Math.floor(Math.random() * stories.length)];
+    gameLogInsert(`Hikaye Parçacığı: "${story}"`);
+    proceedAfterEvent();
+}
+
+function proceedAfterEvent(){
+  if(player.exp >= player.level * 30){
+    player.level++;
+    player.exp = 0;
+    player.maxHP += 5;
+    player.HP = player.maxHP;
+    player.g = Math.floor(player.g + 1);
+    gameLogInsert(`Seviye atladın! Seviye ${player.level}. Max Can +5, Güç +1. Tamamen iyileştin!`);
+    updatePlayerStatsUI();
+  }
+  renderLocationActions(); // Go back to location selection
+}
+
+/* training selection: uses same area temporarily */
+function openTrainingSelection(){
+  // Temporarily show character creation panel for training selection
+  characterCreationPanel.classList.remove("hidden");
+  gameContainer.classList.add("hidden");
+
+  const prevStepLabel = stepLabel.textContent;
+  const prevSelectBtnText = selectBtn.textContent;
+  // Store the current onclick function of selectBtn before changing it
+  const prevSelectBtnOnClick = selectBtn.onclick;
+
+  stepLabel.textContent = "Training Seçimi";
+  selectBtn.textContent = "Seçimi Yap";
+  selectBtn.disabled = false;
+  selecting = false;
+
+  currentOptions = trainingSegments();
+  renderOptions(currentOptions);
+
+  // Remove the previous event listener to prevent multiple calls
+  selectBtn.removeEventListener("click", originalSelectBtnOnClick);
+
+  // Assign new onclick for training selection
+  selectBtn.onclick = () => {
+    if (selecting) return;
+    selecting = true;
+    selectBtn.disabled = true;
+
+    const selectedIndex = pickWeightedIndex(currentOptions);
+    animateSelection(selectedIndex, () => {
+      const sel = currentOptions[selectedIndex];
+      if(sel.stat === "güc"){ player.g += sel.amount; gameLogInsert(`Training: Güç +${sel.amount}`); }
+      else if(sel.stat === "hız"){ player.h += sel.amount; gameLogInsert(`Training: Hız +${sel.amount}`); }
+      else if(sel.stat === "karizma"){ player.k += sel.amount; gameLogInsert(`Training: Karizma +${sel.amount}`); }
+      updatePlayerStatsUI();
+
+      setTimeout(()=>{
+        // Restore game UI
+        characterCreationPanel.classList.add("hidden");
+        gameContainer.classList.remove("hidden");
+
+        stepLabel.textContent = prevStepLabel;
+        selectBtn.textContent = prevSelectBtnText;
+        // Restore the original onclick function
+        selectBtn.onclick = originalSelectBtnOnClick; // Use the global originalSelectBtnOnClick
+        selectBtn.disabled = true; // Keep disabled as we are in game mode now (no selection needed)
+        currentOptions = []; // Clear current options as we're done with training selection
+        renderOptions(currentOptions); // Render empty list
+        proceedAfterEvent(); // Continue game flow
+      }, 800);
+    });
+  };
+}
+
+/* UI Update Functions */
+function updatePlayerStatsUI(){
+    // Update character creation stats display (if visible)
+    statGucEl.textContent = player.g;
+    statHizEl.textContent = player.h;
+    statKarizmaEl.textContent = player.k;
+    statHPEl.textContent = `${player.HP}/${player.maxHP}`;
+    statLevel.textContent = player.level;
+    statExp.textContent = player.exp;
+
+    // Update game stats display (always visible during game)
+    gameStatClanEl.textContent = selectedClan.name;
+    gameStatStyleEl.textContent = player.style;
+    gameStatGucEl.textContent = player.g;
+    gameStatHizEl.textContent = player.h;
+    gameStatKarizmaEl.textContent = player.k;
+    gameStatHPEl.textContent = `${player.HP}/${player.maxHP}`;
+    gameStatLevel.textContent = player.level;
+    gameStatExp.textContent = player.exp;
+}
+
+function updateInventoryUI(){
+    if (player.inventory.length === 0) {
+        inventoryEl.textContent = "Boş";
+        gameInventoryEl.textContent = "Boş";
+    } else {
+        const inventoryNames = player.inventory.map(item => item.name).join(", ");
+        inventoryEl.textContent = inventoryNames;
+        gameInventoryEl.textContent = inventoryNames;
+    }
+}
+
+function updateFightsWonDisplay(){
+    fightsWonDisplay.textContent = `${fightsWon}/10`;
+}
+
+/* Utils */
+function gameLogInsert(txt){ const d=document.createElement("div"); d.innerHTML = txt; gameLog.appendChild(d); gameLog.scrollTop = gameLog.scrollHeight; }
+function disableEventActions(dis){ const btns = eventActionsDiv.querySelectorAll("button"); btns.forEach(b=>b.disabled = !!dis); }
+
+/* End Game */
+function endGame(win){
+  adventureArea.classList.add("hidden");
+  gameStatsDisplay.classList.add("hidden");
+  finalPanel.classList.remove("hidden");
+  finalLog.innerHTML = "";
+  finalLog.innerHTML += `<div>${win ? "Zafer! Oyunu tamamladın." : "Maalesef kaybettin."}</div>`;
+  finalLog.innerHTML += `<div style="margin-top:8px">Seviye: ${player.level} · Güç: ${player.g} · Hız: ${player.h} · Karizma: ${player.k} · Son Can: ${player.HP}/${player.maxHP}</div>`;
+}
+
+/* ========== init / reset ========== */
 function init(){
-  currentStepIndex=0;selectedClan=null;selectedGuc=null;selectedHiz=null;selectedKarizma=null;selectedStyle=null;
-  statClan.textContent="-";statGuc.textContent="-";statHiz.textContent="-";statKarizma.textContent="-";statStyle.textContent="-";
-  finalResult.style.display="none";
-  document.querySelector(".card").style.display="block";
+  currentStepIndex = 0; currentOptions = []; selectedClan=null; selectedGuc=null; selectedHiz=null; selectedKarizma=null; selectedHP=null; selectedStyle=null;
+  player = {g:0,h:0,k:0, style:null, level:1, exp:0, HP:0, maxHP:0, inventory:[]};
+  currentEnemy = null; consecutiveEscapes = 0; fightsWon = 0; currentZone = 1;
+
+  // Reset character creation stats display
+  statClanEl.textContent = "-"; statGucEl.textContent = "-"; statHizEl.textContent = "-"; statKarizmaEl.textContent = "-"; statStyleEl.textContent = "-";
+  statHPEl.textContent = "-"; statLevel.textContent = "1"; statExp.textContent = "0"; inventoryEl.textContent = "Boş";
+
+  // Reset game stats display
+  gameStatClanEl.textContent = "-"; gameStatGucEl.textContent = "-"; gameStatHizEl.textContent = "-"; gameStatKarizmaEl.textContent = "-"; gameStatStyleEl.textContent = "-";
+  gameStatHPEl.textContent = "-"; gameStatLevel.textContent = "1"; gameStatExp.textContent = "0"; gameInventoryEl.textContent = "Boş";
+  fightsWonDisplay.textContent = "0/10";
+
+
+  characterCreationPanel.classList.remove("hidden"); // Show character creation panel
+  gameContainer.classList.add("hidden"); // Hide main game container
+
+  document.getElementById("gameIntro").classList.remove("hidden");
+  finalPanel.classList.add("hidden"); startGameBtn.classList.add("hidden");
+  selectBtn.disabled = false;
+  selectBtn.textContent = "Seç";
+  selecting = false;
+
+  // Ensure the original onclick function is correctly assigned
+  selectBtn.onclick = originalSelectBtnOnClick;
+
+
+  stepLabel.textContent = "Adım 1/6: Klan";
   updateStep();
+  stepResult.textContent = "";
+  gameLog.innerHTML = "";
 }
-window.onload=init;
+resetBtn.addEventListener("click", init);
+restartAllBtn.addEventListener("click", ()=> location.reload());
+
+window.addEventListener("load", init);
 </script>
 </body>
 </html>
-
