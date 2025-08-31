@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>RPG — Karanlık Oda Macerası (Dövüş Ağırlıklı)</title>
+<title>Börsgame: Börs game</title>
 <style>
   :root{--bg:#071027;--panel:#0f1626;--accent:#7aa2ff;--muted:#9aa4d6;}
   body{margin:0;font-family:Inter, system-ui, Arial;background:linear-gradient(180deg,var(--bg),#06102a);color:#eef;padding:18px;display:flex;justify-content:center;}
@@ -13,7 +13,6 @@
   .left{width:360px;text-align:center;}
   .right{flex:1;}
 
-  /* New styles for game layout */
   .game-layout{display:flex;flex-direction:column;flex:1;}
   .game-main-area{flex:1;display:flex;flex-direction:column;}
   .game-stats-area{background:linear-gradient(180deg,var(--panel),#0b1220);border:1px solid rgba(255,255,255,.03);border-radius:12px;padding:10px;margin-top:14px;}
@@ -21,7 +20,6 @@
   .game-stats-area .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:12px;}
   .game-stats-area .stat{padding:4px;border-radius:4px;background:rgba(255,255,255,.02);}
   .game-stats-area .inventory-stat{margin-top:8px;font-size:12px;}
-
 
   h1{margin:0 0 6px;font-size:18px;color:var(--accent)}
   button{appearance:none;border:0;background:linear-gradient(180deg,#3f6bff,#2e4fd1);color:white;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
@@ -35,7 +33,7 @@
   .panel-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;justify-content:center}
   .stat-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
   .stat{background:rgba(255,255,255,.02);padding:8px;border-radius:8px;font-weight:700}
-  .log{height:150px;overflow:auto;background:rgba(255,255,255,.02);border-radius:8px;padding:10px;margin-top:10px;font-size:13px}
+  .log{height:200px;overflow:auto;background:rgba(255,255,255,.02);border-radius:8px;padding:10px;margin-top:10px;font-size:13px}
   .game-panel{margin-top:12px}
   .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
   .muted{color:var(--muted);font-size:13px}
@@ -43,6 +41,7 @@
   .result-card{background:linear-gradient(180deg,#071422,#04101a);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.02);margin-top:10px}
   .player-hp{color:#ff6b6b;font-weight:bold;}
   .enemy-hp{color:#ffb86b;font-weight:bold;}
+  .story-text{line-height:1.6;margin-bottom:15px;}
   @media (max-width:900px){
     .top{flex-direction:column}
     .left{width:100%}
@@ -122,37 +121,801 @@
             <button id="restartAllBtn">Baştan Başlat</button>
         </div>
     </div>
-
   </div>
 
 <script>
-/* ========== DATA ========== */
+/* ========== HİKAYE VE OYUN VERİLERİ ========== */
 const clans = [
-  {name:"Demiralay", weight:1, bonus:{g:10,h:10,k:10}, guaranteedStyle:null},
-  {name:"Taş",       weight:10, bonus:{g:3,h:3,k:1}, guaranteedStyle:"Karate"},
-  {name:"Karahan",   weight:10, bonus:{g:1,h:0,k:5}, guaranteedStyle:null},
-  {name:"Eşme",      weight:20, bonus:{g:2,h:0,k:0}, guaranteedStyle:"Boks"},
-  {name:"Yağmurcu",  weight:20, bonus:{g:1,h:0,k:2}, guaranteedStyle:"Muay Thai"},
-  {name:"Tulunay",   weight:20, bonus:{g:2,h:0,k:0}, guaranteedStyle:null},
-  {name:"Çepe",      weight:30, bonus:{g:0,h:0,k:0}, guaranteedStyle:null},
-  {name:"Aysu",      weight:40, bonus:{g:-2,h:-2,k:-2}, guaranteedStyle:null}
-];
-const fightingStyles = [
-  {name:"Karate", weight:10, bonus:2, type:"guc"}, // Bonus applies to strength
-  {name:"Boks",   weight:10, bonus:2, type:"guc"},
-  {name:"Muay Thai", weight:10, bonus:2, type:"guc"},
-  {name:"Hiçbir Stil", weight:70, bonus:0, type:"none"}
+  {name:"Demiralay", weight:1, bonus:{g:10,h:10,k:10}, guaranteedStyle:null, desc:"Eski bir gizli örgüt. Okulun kurucularından."},
+  {name:"Taş",       weight:10, bonus:{g:3,h:3,k:1}, guaranteedStyle:"Karate", desc:"Sert ve disiplinli. Berat Hoca'nın favori öğrencileri."},
+  {name:"Karahan",   weight:10, bonus:{g:1,h:0,k:5}, guaranteedStyle:null, desc:"Entrikacı ve zeki. Okul yönetiminde söz sahibi."},
+  {name:"Eşme",      weight:20, bonus:{g:2,h:0,k:0}, guaranteedStyle:"Boks", desc:"Sokak dövüşçüleri. Okulun arka bahçesinin hakimleri."},
+  {name:"Yağmurcu",  weight:20, bonus:{g:1,h:0,k:2}, guaranteedStyle:"Muay Thai", desc:"Doğu felsefesiyle ilgili. Meditasyon ve dövüş sanatları."},
+  {name:"Tulunay",   weight:20, bonus:{g:2,h:0,k:0}, guaranteedStyle:null, desc:"Gizemli ve mistik. Okulun eski sırlarını bilirler."},
+  {name:"Çepe",      weight:30, bonus:{g:0,h:0,k:0}, guaranteedStyle:null, desc:"Sıradan öğrenciler. Olaylardan habersiz."},
+  {name:"Aysu",      weight:40, bonus:{g:-2,h:-2,k:-2}, guaranteedStyle:null, desc:"Okulun kaybedenleri. Herkes tarafından dışlanırlar."}
 ];
 
-// Enemy fighting styles with their stat bonuses
+const fightingStyles = [
+  {name:"Karate", weight:10, bonus:2},
+  {name:"Boks",   weight:10, bonus:2},
+  {name:"Muay Thai", weight:10, bonus:2},
+  {name:"Hiçbir Stil", weight:70, bonus:0}
+];
+
+// Hikaye durumu
+let storyState = {
+  step: 0,
+  helpedStranger: null,
+  foundMap: false,
+  knowsSecret: false,
+  trustLevel: 0,
+  hasAlly: false,
+  enemyCount: 0,
+  discoveredTruth: false,
+  hasKey: false, // Yeni: Gizli odaya anahtar
+  hasAncientScroll: false, // Yeni: Antik parşömen
+  hasDemiralayRing: false, // Yeni: Demiralay yüzüğü
+  visitedSecretLibrary: false, // Yeni: Gizli kütüphane ziyaret edildi mi?
+  consecutiveFights: 0 // Yeni: Ardışık dövüş sayacı
+};
+
+// Hikaye olayları
+const storyEvents = [
+  {
+    id: 0,
+    text: "Okulun eski arşiv odasında baygın halde uyandın. Başın ağrıyor ve hiçbir şey hatırlamıyorsun. Etrafta eski dosyalar ve tozlu raflar var. Bir ses fısıldıyor: 'Kayıp Klanın Sırrı...' ",
+    choices: [
+      {text: "Etrafı araştır", nextStep: 1},
+      {text: "Dışarı çıkmaya çalış", nextStep: 2}
+    ]
+  },
+  {
+    id: 1,
+    text: "Rafları karıştırırken eski bir günlük buldun. İçinde 'Klan Savaşları' ve 'Berat Hoca'nın Planları' yazıyor. Günlüğün son sayfasında bir sembol çizili. Okumaya devam etmek ister misin?",
+    choices: [
+      {text: "Evet, oku", nextStep: 3, effect: () => { storyState.knowsSecret = true; }},
+      {text: "Hayır, bırak", nextStep: 4}
+    ]
+  },
+  {
+    id: 2,
+    text: "Kapı kilitli! Birisi seni burada hapsetmiş. Duvarda tuhaf semboller var. Semboller arasında parlayan küçük bir anahtar deliği dikkatini çekiyor.",
+    choices: [
+      {text: "Sembolleri incele", nextStep: 5},
+      {text: "Yardım için bağır", nextStep: 6}
+    ]
+  },
+  {
+    id: 3,
+    text: "Günlükte yazılanlara göre Berat Hoca, okulu yöneten gizli bir örgütün lideri. Klanlar arasında bir savaş başlatmak istiyor. Sen de bu savaşın bir parçasısın. Günlüğün arasına sıkışmış paslı bir anahtar buldun.",
+    choices: [
+      {text: "Anahtarı al ve planları bozmaya çalış", nextStep: 7, effect: () => { storyState.hasKey = true; }},
+      {text: "Anahtarı al ve örgüte katılmayı düşün", nextStep: 8, effect: () => { storyState.hasKey = true; }}
+    ]
+  },
+  {
+    id: 4,
+    text: "Günlüğü bıraktın ama içeriği aklından çıkmıyor. Kapıdan sesler geliyor, sanki birileri seni arıyor.",
+    choices: [
+      {text: "Saklan", nextStep: 9},
+      {text: "Yardım iste", nextStep: 10}
+    ]
+  },
+  {
+    id: 5,
+    text: "Semboller eski bir klan diline ait. Demiralay klanının işareti bu. Sen bu klana ait olmalısın. Sembollerin ortasındaki anahtar deliğine elindeki anahtarı denemek ister misin?",
+    choices: [
+      {text: "Anahtarı dene", nextStep: 54, condition: () => player.inventory.some(item => item.name === "Paslı Anahtar")}, // Eşya kontrolü
+      {text: "Sembolleri takip et", nextStep: 11},
+      {text: "Başka çıkış ara", nextStep: 12}
+    ]
+  },
+  {
+    id: 6,
+    text: "Bağırdıkça kapı açıldı ve içeri iki kişi girdi. Berat Hoca'nın gözdesi YiğitAysu ve arkadaşları! Seni buldular!",
+    fight: true,
+    nextStep: 13
+  },
+  {
+    id: 7,
+    text: "Planları bozmaya karar verdin. Anahtar elinde, buradan çıkmalısın.",
+    choices: [
+      {text: "Gizli geçit ara", nextStep: 14},
+      {text: "Saldırı planı yap", nextStep: 15}
+    ]
+  },
+  {
+    id: 8,
+    text: "Örgüte katılmayı düşünüyorsun. Anahtar elinde, belki de güç senin tarafında olmalı.",
+    choices: [
+      {text: "Örgütü araştır", nextStep: 16},
+      {text: "Hemen katıl", nextStep: 17}
+    ]
+  },
+  {
+    id: 9,
+    text: "Bir dolabın arkasına saklandın. İçeri YiğitAysu ve arkadaşları girdi. Seni arıyorlar. Fısıltılarını duyuyorsun: 'Anahtarı bulmalıyız!'",
+    choices: [
+      {text: "Sessiz kal", nextStep: 18},
+      {text: "Aniden çık ve saldır", nextStep: 19}
+    ]
+  },
+  {
+    id: 10,
+    text: "Yardım istedin. Gelen kişi seni tanıyor gibi görünüyor. 'Demiralay soyundansın değil mi?' diye sordu. Elinde parlayan bir yüzük var.",
+    choices: [
+      {text: "Evet", nextStep: 20, effect: () => { storyState.hasAlly = true; }},
+      {text: "Hayır", nextStep: 21}
+    ]
+  },
+  {
+    id: 11,
+    text: "Semboller seni gizli bir geçide götürdü. Geçit okulun bodrumuna açılıyor. Geçidin girişinde eski bir Demiralay yüzüğü buldun.",
+    choices: [
+      {text: "Yüzüğü al ve geçide gir", nextStep: 22, effect: () => { player.inventory.push(items.find(i => i.name === "Demiralay Yüzüğü")); updateInventoryUI(); storyState.hasDemiralayRing = true; }},
+      {text: "Geri dön", nextStep: 23}
+    ]
+  },
+  {
+    id: 12,
+    text: "Başka çıkış bulamadın. YiğitAysu ve grubu seni buldu! 'Anahtar sende mi?' diye bağırıyorlar.",
+    fight: true,
+    nextStep: 13
+  },
+  {
+    id: 13,
+    text: "Dövüşten sonra... Yerde yatan düşmanların arasında parlayan bir şey gördün.",
+    choices: [
+      {text: "Kaç", nextStep: 24},
+      {text: "Sorular sor", nextStep: 25},
+      {text: "Yerdeki parlayan şeyi incele", nextStep: 55} // Yeni seçenek
+    ]
+  },
+  {
+    id: 14,
+    text: "Duvarda gizli bir mekanizma buldun. Anahtar deliği var. Elindeki anahtarı denemek ister misin?",
+    choices: [
+      {text: "Anahtarı dene", nextStep: 26, condition: () => player.inventory.some(item => item.name === "Paslı Anahtar")},
+      {text: "Hayır, riskli", nextStep: 27}
+    ]
+  },
+  {
+    id: 15,
+    text: "Saldırı planı yaptın ama zamanın kısıtlı. Hemen harekete geçmelisin. Koridordan ayak sesleri geliyor.",
+    choices: [
+      {text: "Doğrudan saldır", nextStep: 28},
+      {text: "Sinsi taktikler kullan", nextStep: 29}
+    ]
+  },
+  {
+    id: 16,
+    text: "Örgütü araştırırken, onların aslında okulu kaostan korumaya çalıştığını öğrendin. Berat Hoca'nın planları göründüğü gibi değilmiş. Sana eski bir parşömen gösterdiler.",
+    choices: [
+      {text: "Parşömeni al ve onlara katıl", nextStep: 30, effect: () => { storyState.discoveredTruth = true; player.inventory.push(items.find(i => i.name === "Antik Parşömen")); updateInventoryUI(); storyState.hasAncientScroll = true; }},
+      {text: "Yine de karşı çık", nextStep: 31}
+    ]
+  },
+  {
+    id: 17,
+    text: "Örgüte hemen katıldın. Sana bir görev verdiler: 'Okulun kalbindeki sırrı bul.' Sana bir harita verdiler.",
+    choices: [
+      {text: "Haritayı al ve görevi kabul et", nextStep: 32, effect: () => { storyState.foundMap = true; }},
+      {text: "Şüphelen ve reddet", nextStep: 33}
+    ]
+  },
+  {
+    id: 18,
+    text: "Bir dolabın arkasına saklandın. İçeri YiğitAysu ve arkadaşları girdi. Seni arıyorlar. Fısıltılarını duyuyorsun: 'Anahtarı bulmalıyız!' Bir süre sonra gittiler. Şimdilik güvendesin.",
+    choices: [
+      {text: "Başka bir çıkış ara", nextStep: 12},
+      {text: "Günlüğü tekrar oku", nextStep: 3}
+    ]
+  },
+  {
+    id: 19,
+    text: "Aniden çıktın ve saldırdın! YiğitAysu ve arkadaşları şaşkın. Dövüş kaçınılmaz!",
+    fight: true,
+    nextStep: 13
+  },
+  {
+    id: 20,
+    text: "Gelen kişi, eski bir Demiralay üyesi olan zoktay'ymiş. Sana yardım etmeye karar verdi. 'Demiralay Yüzüğü'nü takıyor musun?' diye sordu.",
+    choices: [
+      {text: "Evet, yüzüğü göster", nextStep: 34, condition: () => player.inventory.some(item => item.name === "Demiralay Yüzüğü")},
+      {text: "Hayır, yüzüğüm yok", nextStep: 35}
+    ]
+  },
+  {
+    id: 21,
+    text: "Hayır dedin. Gelen kişi sana şüpheyle baktı ve uzaklaştı. Yalnız kaldın.",
+    choices: [
+      {text: "Başka bir çıkış ara", nextStep: 12},
+      {text: "Yardım için tekrar bağır", nextStep: 6}
+    ]
+  },
+  {
+    id: 22,
+    text: "Gizli geçitten bodruma indin. Burası karanlık ve nemli. İleride bir ışık görünüyor. Duvarlarda eski klan sembolleri var.",
+    choices: [
+      {text: "Işığa doğru git", nextStep: 36},
+      {text: "Sembolleri incele", nextStep: 56}, // Yeni seçenek
+      {text: "Geri dön", nextStep: 23}
+    ]
+  },
+  {
+    id: 23,
+    text: "Geri döndün. Arşiv odasında hala kilitlisin.",
+    choices: [
+      {text: "Sembolleri tekrar incele", nextStep: 5},
+      {text: "Yardım için bağır", nextStep: 6}
+    ]
+  },
+  {
+    id: 24,
+    text: "Dövüşten sonra kaçtın. Şimdilik güvendesin ama peşindeler. Okulun koridorlarında dolaşıyorsun.",
+    choices: [
+      {text: "Okulda saklan", nextStep: 37},
+      {text: "Şehre in", nextStep: 38}
+    ]
+  },
+  {
+    id: 25,
+    text: "Dövüşten sonra YiğitAysu'ya sorular sordun. Sana Berat Hoca'nın gerçek niyetini anlattı. 'O, okulu kurtarmaya çalışıyor!' dedi. Yerdeki parlayan şeyi fark ettin.",
+    choices: [
+      {text: "Ona inan ve parlayan şeyi incele", nextStep: 39, effect: () => { storyState.discoveredTruth = true; }},
+      {text: "İnanma ve parlayan şeyi incele", nextStep: 40}
+    ]
+  },
+  {
+    id: 26,
+    text: "Mekanizmayı açtın ve gizli bir bölme ortaya çıktı. İçinde eski bir harita ve bir 'Antik Parşömen' var.",
+    choices: [
+      {text: "Haritayı ve parşömeni al", nextStep: 41, effect: () => { storyState.foundMap = true; player.inventory.push(items.find(i => i.name === "Antik Parşömen")); updateInventoryUI(); storyState.hasAncientScroll = true; }},
+      {text: "Sadece haritayı al", nextStep: 42, effect: () => { storyState.foundMap = true; }}
+    ]
+  },
+  {
+    id: 27,
+    text: "Mekanizmayı açmadın. Başka bir yol bulmalısın. Koridordan sesler geliyor.",
+    choices: [
+      {text: "Saldırı planı yap", nextStep: 15},
+      {text: "Yardım iste", nextStep: 10}
+    ]
+  },
+  {
+    id: 28,
+    text: "Doğrudan saldırdın! Bu cesurca ama riskli bir hareket. Dövüş başlıyor!",
+    fight: true,
+    nextStep: 13
+  },
+  {
+    id: 29,
+    text: "Sinsi taktikler kullandın. Düşmanlarını şaşırtmayı başardın. Dövüş başlıyor!",
+    fight: true,
+    nextStep: 13
+  },
+  {
+    id: 30,
+    text: "Örgüte katıldın ve okulun gerçek koruyucusu oldun. Berat Hoca ile birlikte çalışıyorsunuz. Antik Parşömen'i inceledin ve klanların birleşme sırrını öğrendin.",
+    choices: [
+      {text: "Oyunu Bitir (İyi Son: Klanların Birleşimi)", nextStep: -1}
+    ]
+  },
+  {
+    id: 31,
+    text: "Yine de onlara karşı çıktın. Okulda yeni bir düşman edindin: Örgüt. Şimdi hem Berat Hoca'ya hem de örgüte karşı savaşıyorsun.",
+    choices: [
+      {text: "Savaşmaya devam et", nextStep: 43}
+    ]
+  },
+  {
+    id: 32,
+    text: "Haritayı aldın ve görevi kabul ettin. Okulun derinliklerine doğru ilerliyorsun. Harita, gizli kütüphaneyi işaret ediyor.",
+    choices: [
+      {text: "Gizli kütüphaneye git", nextStep: 57, condition: () => storyState.foundMap}
+    ]
+  },
+  {
+    id: 33,
+    text: "Şüphelendin ve görevi reddettin. Örgüt sana düşman oldu. Şimdi okulda yalnızsın ve herkes sana karşı gibi hissediyorsun.",
+    choices: [
+      {text: "Kaç", nextStep: 24}
+    ]
+  },
+  {
+    id: 34,
+    text: "zoktay, Demiralay Yüzüğü'nü görünce gülümsedi. 'Demek sen de bizdensin!' dedi. Sana okulun gizli geçitlerini ve klanların tarihini anlattı. Artık bir müttefikin var.",
+    choices: [
+      {text: "Onunla birlikte hareket et", nextStep: 45},
+      {text: "Yalnız devam et", nextStep: 35}
+    ]
+  },
+  {
+    id: 35,
+    text: "Yalnız devam ettin. zoktay'nin yardımını reddettiğin için pişman olabilirsin. Okulun koridorlarında dolaşıyorsun.",
+    choices: [
+      {text: "Yalnız araştır", nextStep: 46}
+    ]
+  },
+  {
+    id: 36,
+    text: "Işığa doğru gittin ve kendini okulun gizli laboratuvarında buldun. Berat Hoca burada tuhaf deneyler yapıyor! Seni fark etti!",
+    fight: true,
+    nextStep: 47
+  },
+  {
+    id: 37,
+    text: "Okulda saklandın. Bir süre sonra her yer sessizleşti. Güvende misin? Koridorlardan fısıltılar geliyor.",
+    choices: [
+      {text: "Dışarı çık", nextStep: 48},
+      {text: "Fısıltıları takip et", nextStep: 58} // Yeni seçenek
+    ]
+  },
+  {
+    id: 38,
+    text: "Şehre indin. Okuldan uzaklaştın ama yeni tehlikeler seni bekliyor. Okulun gizemi arkanda kaldı.",
+    choices: [
+      {text: "Yeni bir hayat kur (Kötü Son: Kaçış)", nextStep: -1}
+    ]
+  },
+  {
+    id: 39,
+    text: "YiğitAysu'ya inandın. Berat Hoca'nın aslında iyi niyetli olduğunu öğrendin. Yerdeki parlayan şey bir 'Klan Rozeti' çıktı. Onu aldın. Berat Hoca'ya katılmaya karar verdin.",
+    choices: [
+      {text: "Klan Rozetini al ve Oyunu Bitir (İyi Son: Anlayış)", nextStep: -1, effect: () => { player.inventory.push(items.find(i => i.name === "Klan Rozeti")); updateInventoryUI(); }}
+    ]
+  },
+  {
+    id: 40,
+    text: "YiğitAysu'ya inanmadın. Hala Berat Hoca'nın kötü olduğuna inanıyorsun. Yerdeki parlayan şey bir 'Klan Rozeti' çıktı. Onu aldın. Onu durdurmaya çalışmalısın.",
+    choices: [
+      {text: "Klan Rozetini al ve Onu durdurmaya çalış", nextStep: 43, effect: () => { player.inventory.push(items.find(i => i.name === "Klan Rozeti")); updateInventoryUI(); }}
+    ]
+  },
+  {
+    id: 41,
+    text: "Haritayı ve Antik Parşömen'i aldın. Harita okulun gizli geçitlerini ve sırlarını gösteriyor. Parşömen ise eski bir ritüelden bahsediyor.",
+    choices: [
+      {text: "Haritayı takip et", nextStep: 49},
+      {text: "Parşömeni incele", nextStep: 59} // Yeni seçenek
+    ]
+  },
+  {
+    id: 42,
+    text: "Sadece haritayı aldın. Belki de bu sırları bilmemek daha iyidir. Harita okulun gizli geçitlerini gösteriyor.",
+    choices: [
+      {text: "Haritayı takip et", nextStep: 49},
+      {text: "Başka bir yol bul", nextStep: 15}
+    ]
+  },
+  {
+    id: 43,
+    text: "Berat Hoca'ya karşı savaşmaya devam ediyorsun. Okulun kaderi senin ellerinde. Final dövüşüne hazırlanmalısın.",
+    choices: [
+      {text: "Final Dövüşüne Hazırlan", nextStep: 50}
+    ]
+  },
+  {
+    id: 44,
+    text: "Okulun derinliklerinde, eski bir tapınak buldun. Burası klanların buluşma yeriymiş. Duvarlarda eski yazıtlar var.",
+    choices: [
+      {text: "Tapınağı incele", nextStep: 51},
+      {text: "Yazıtları oku", nextStep: 60, condition: () => storyState.hasAncientScroll} // Eşya kontrolü
+    ]
+  },
+  {
+    id: 45,
+    text: "zoktay ile birlikte araştırırken, Berat Hoca'nın gerçek planlarını ortaya çıkardınız. Okulu kurtarmak için son bir şansınız var. zoktay, 'Demiralay Yüzüğü'nü kullanarak gizli bir geçit açabiliriz' dedi.",
+    choices: [
+      {text: "Gizli geçidi kullan", nextStep: 61, condition: () => storyState.hasDemiralayRing},
+      {text: "Berat Hoca ile yüzleş", nextStep: 50}
+    ]
+  },
+  {
+    id: 46,
+    text: "Yalnız araştırırken, kendini bir tuzağın içinde buldun. Düşmanlar seni bekliyor! 'Anahtarı ver!' diye bağırıyorlar.",
+    fight: true,
+    nextStep: 13
+  },
+  {
+    id: 47,
+    text: "Laboratuvarda Berat Hoca'nın deneylerini durdurdun. Okulun geleceği değişti. Berat Hoca sana minnettar kaldı ve sana 'Labubu' hediye etti.",
+    choices: [
+      {text: "Labubu'yu al ve Oyunu Bitir (Farklı Son: Bilimsel Barış)", nextStep: -1, effect: () => { player.inventory.push(items.find(i => i.name === "Labubu")); updateInventoryUI(); }}
+    ]
+  },
+  {
+    id: 48,
+    text: "Dışarı çıktın. Okulun koridorları boş. Nereye gideceksin? Bir ses duyuyorsun: 'Yardım et!'",
+    choices: [
+      {text: "Sese doğru git", nextStep: 62}, // Yeni olay
+      {text: "Okulda dolaş", nextStep: 52}
+    ]
+  },
+  {
+    id: 49,
+    text: "Haritayı takip ettin ve okulun en gizli odasına ulaştın. Burada Berat Hoca seni bekliyor! 'Demek sırrı çözdün...' dedi.",
+    fight: true, // Final dövüşü
+    nextStep: 50
+  },
+  {
+    id: 50,
+    text: "Berat Hoca ile yüzleşmeye hazırsın. Okulun kaderi bu dövüşe bağlı!",
+    choices: [
+      {text: "Berat Hoca ile Dövüş", handler: "startFinalBossBattle"}
+    ]
+  },
+  {
+    id: 51,
+    text: "Tapınağı inceledin ve klanların eski anlaşmasını buldun. Bu, Berat Hoca'nın planlarını değiştirebilir. Anlaşma, 'Antik Parşömen' ile mühürlenmiş.",
+    choices: [
+      {text: "Anlaşmayı Berat Hoca'ya göster", nextStep: 53, condition: () => storyState.hasAncientScroll}
+    ]
+  },
+  {
+    id: 52,
+    text: "Okulda dolaşırken, eski bir arkadaşınla karşılaştın. Sana yardım etmeye hazır. 'Neden bu kadar gerginsin?' diye sordu.",
+    choices: [
+      {text: "Yardımını kabul et", nextStep: 20}
+    ]
+  },
+  {
+    id: 53,
+    text: "Anlaşmayı Berat Hoca'ya gösterdin. Şaşırdı ve planlarını gözden geçirmeye karar verdi. Okul kurtuldu! 'Klanların birleşimi...' diye fısıldadı.",
+    choices: [
+      {text: "Oyunu Bitir (Barışçıl Son: Anlaşma)", nextStep: -1}
+    ]
+  },
+  // Yeni Hikaye Adımları
+  {
+    id: 54,
+    text: "Anahtarı anahtar deliğine soktun. Bir tık sesiyle gizli bir kapı açıldı! İçeride tozlu raflar ve eski kitaplar var. Burası gizli kütüphane olmalı.",
+    choices: [
+      {text: "Gizli kütüphaneye gir", nextStep: 63, effect: () => { storyState.visitedSecretLibrary = true; }}
+    ]
+  },
+  {
+    id: 55,
+    text: "Yerdeki parlayan şeyi inceledin. Bir 'Paslı Anahtar' buldun! Bu anahtar bir yerleri açabilir.",
+    choices: [
+      {text: "Anahtarı al", nextStep: 13, effect: () => { player.inventory.push(items.find(i => i.name === "Paslı Anahtar")); updateInventoryUI(); storyState.hasKey = true; }} // Tekrar dövüş sonrası seçeneklere dön
+    ]
+  },
+  {
+    id: 56,
+    text: "Bodrumdaki sembolleri inceledin. Bunlar Demiralay klanının eski mühürleri. Bir tanesi diğerlerinden farklı, sanki bir geçidi işaret ediyor.",
+    choices: [
+      {text: "Farklı sembolü takip et", nextStep: 64},
+      {text: "Işığa doğru git", nextStep: 36}
+    ]
+  },
+  {
+    id: 57,
+    text: "Gizli kütüphaneye girdin. Burası eski parşömenler ve unutulmuş bilgilerle dolu. Bir masanın üzerinde 'Sikitin Donu' yazan tuhaf bir kitap duruyor.",
+    choices: [
+      {text: "Kitabı incele", nextStep: 65},
+      {text: "Parşömenleri araştır", nextStep: 66}
+    ]
+  },
+  {
+    id: 58,
+    text: "Fısıltıları takip ettin. Sesler okulun eski tiyatro salonundan geliyor. İçeride bir grup öğrenci gizlice toplanmış, bir ritüel yapıyorlar!",
+    choices: [
+      {text: "Gizlice dinle", nextStep: 67},
+      {text: "İçeri dal", nextStep: 68}
+    ]
+  },
+  {
+    id: 59,
+    text: "Antik Parşömen'i inceledin. Üzerinde klanların birleşimi için gerekli olan 'Birlik Ritüeli' yazıyor. Bu ritüel, tüm klanların liderlerini bir araya getirmeyi gerektiriyor.",
+    choices: [
+      {text: "Ritüeli gerçekleştirmeye çalış", nextStep: 69, condition: () => storyState.knowsSecret && storyState.hasDemiralayRing && storyState.hasAncientScroll}, // Tüm şartlar
+      {text: "Berat Hoca ile konuş", nextStep: 50}
+    ]
+  },
+  {
+    id: 60,
+    text: "Tapınaktaki yazıtları okudun. Antik Parşömen'deki bilgilerle örtüşüyorlar. Klanların birleşimi için 'Demiralay Yüzüğü' ve 'Antik Parşömen'in' gücünün birleşmesi gerekiyor.",
+    choices: [
+      {text: "Ritüeli gerçekleştirmeye çalış", nextStep: 69, condition: () => storyState.knowsSecret && storyState.hasDemiralayRing && storyState.hasAncientScroll},
+      {text: "Berat Hoca ile konuş", nextStep: 50}
+    ]
+  },
+  {
+    id: 61,
+    text: "zoktay, Demiralay Yüzüğü'nü kullanarak gizli geçidi açtı. Geçit sizi doğrudan Berat Hoca'nın ofisine götürüyor! Artık kaçış yok.",
+    choices: [
+      {text: "Berat Hoca ile yüzleş", nextStep: 50}
+    ]
+  },
+  {
+    id: 62,
+    text: "Sese doğru gittin. Okulun bahçesinde yaralı bir öğrenci yatıyor. 'Bana yardım et...' diye fısıldıyor. Üzerinde 'Eşmenin Boks Eldivenleri' var.",
+    choices: [
+      {text: "Yardım et", nextStep: 70, effect: () => { storyState.helpedStranger = true; }},
+      {text: "Umursama ve geç", nextStep: 71}
+    ]
+  },
+  {
+    id: 63,
+    text: "Gizli kütüphanedesin. Burası okulun en büyük sırlarını barındırıyor. Ne yapmak istersin?",
+    choices: [
+      {text: "Kitapları karıştır", nextStep: 57}, // Tekrar kütüphane seçeneklerine dön
+      {text: "Çıkış ara", nextStep: 24} // Okul koridorlarına dön
+    ]
+  },
+  {
+    id: 64,
+    text: "Farklı sembolü takip ettin. Seni okulun altındaki eski tünellere götürdü. Burası çok eski ve ürkütücü.",
+    choices: [
+      {text: "Tünellerde ilerle", nextStep: 72},
+      {text: "Geri dön", nextStep: 22}
+    ]
+  },
+  {
+    id: 65,
+    text: "'Sikitin Donu' kitabını inceledin. Aslında bu bir şaka kitabıymış! Ama içinde gizli bir bölme var ve 'Sağlık İksiri' buldun.",
+    choices: [
+      {text: "İksiri al", nextStep: 73, effect: () => { player.inventory.push(items.find(i => i.name === "Sağlık İksiri")); updateInventoryUI(); }},
+      {text: "Parşömenleri araştır", nextStep: 66}
+    ]
+  },
+  {
+    id: 66,
+    text: "Parşömenleri araştırdın. Kayıp Klanın, yani Demiralay'ın, aslında okulun kurucuları olduğunu ve okulun altında büyük bir güç kaynağı sakladıklarını öğrendin.",
+    choices: [
+      {text: "Güç kaynağını bulmaya çalış", nextStep: 74},
+      {text: "Berat Hoca ile konuş", nextStep: 50}
+    ]
+  },
+  {
+    id: 67,
+    text: "Gizlice dinledin. Öğrenciler, Berat Hoca'ya karşı bir isyan planlıyorlar! Seni fark etmediler.",
+    choices: [
+      {text: "İsyancılara katıl", nextStep: 75},
+      {text: "Berat Hoca'yı uyar", nextStep: 76}
+    ]
+  },
+  {
+    id: 68,
+    text: "İçeri daldın. Öğrenciler şaşkın. 'Kimsin sen?!' diye bağırdılar. Dövüş kaçınılmaz!",
+    fight: true,
+    nextStep: 13
+  },
+  {
+    id: 69,
+    text: "Birlik Ritüeli'ni gerçekleştirmeye çalıştın. Tüm klan liderlerini bir araya getirmelisin. Bu uzun ve zorlu bir görev olacak.",
+    choices: [
+      {text: "Klan liderlerini bulmaya başla", nextStep: 77}
+    ]
+  },
+  {
+    id: 70,
+    text: "Yaralı öğrenciye yardım ettin. Sana minnettar kaldı ve 'Eşmenin Boks Eldivenleri'ni hediye etti. 'Beni YiğitAysu dövdü...' diye fısıldadı.",
+    choices: [
+      {text: "Eldivenleri al", nextStep: 78, effect: () => { player.inventory.push(items.find(i => i.name === "Eşmenin Boks Eldivenleri")); updateInventoryUI(); }},
+      {text: "Okulda dolaş", nextStep: 24}
+    ]
+  },
+  {
+    id: 71,
+    text: "Yaralı öğrenciyi umursamadın ve geçtin. Vicdanın biraz rahatsız oldu.",
+    choices: [
+      {text: "Okulda dolaş", nextStep: 24}
+    ]
+  },
+  {
+    id: 72,
+    text: "Tünellerde ilerledin. Burası bir labirent gibi. Bir ses duyuyorsun: 'Buraya ait değilsin!'",
+    choices: [
+      {text: "Sese doğru git", nextStep: 79},
+      {text: "Geri dön", nextStep: 64}
+    ]
+  },
+  {
+    id: 73,
+    text: "Sağlık İksiri'ni aldın. Envanterine eklendi. Ne yapmak istersin?",
+    choices: [
+      {text: "İksiri kullan", nextStep: 80, condition: () => player.HP < player.maxHP},
+      {text: "Parşömenleri araştır", nextStep: 66}
+    ]
+  },
+  {
+    id: 74,
+    text: "Güç kaynağını bulmaya çalıştın. Kütüphanedeki ipuçları seni okulun en eski bölümüne, 'Kayıp Klanın Tapınağı'na' yönlendiriyor.",
+    choices: [
+      {text: "Tapınağa git", nextStep: 81}
+    ]
+  },
+  {
+    id: 75,
+    text: "İsyancılara katıldın. Berat Hoca'ya karşı savaşmak için güçlerini birleştirdiniz. Sana bir görev verdiler: 'Berat Hoca'nın laboratuvarını sabote et!'",
+    choices: [
+      {text: "Laboratuvarı sabote et", nextStep: 82}
+    ]
+  },
+  {
+    id: 76,
+    text: "Berat Hoca'yı uyardın. Sana minnettar kaldı ve isyancıları durdurmak için yardımını istedi. 'Onları durdurmalıyız!' dedi.",
+    choices: [
+      {text: "İsyancıları durdur", nextStep: 83}
+    ]
+  },
+  {
+    id: 77,
+    text: "Klan liderlerini bulmaya başladın. Her klanın kendine özgü bir lideri var ve onları ikna etmek zor olacak. İlk olarak Taş Klanı lideriyle konuşmalısın.",
+    choices: [
+      {text: "Taş Klanı liderini bul", nextStep: 84}
+    ]
+  },
+  {
+    id: 78,
+    text: "Eşmenin Boks Eldivenleri'ni aldın. Gücün arttı! Ne yapmak istersin?",
+    choices: [
+      {text: "Okulda dolaş", nextStep: 24},
+      {text: "YiğitAysu'dan intikam al", nextStep: 19} // Tekrar dövüşe yönlendir
+    ]
+  },
+  {
+    id: 79,
+    text: "Sese doğru gittin. Tünellerin sonunda devasa bir yaratık seni bekliyor! Bu, Kayıp Klanın koruyucusu olmalı!",
+    fight: true,
+    nextStep: 85
+  },
+  {
+    id: 80,
+    text: "Sağlık İksiri'ni kullandın. Canın yenilendi! Kendini daha iyi hissediyorsun.",
+    choices: [
+      {text: "Parşömenleri araştır", nextStep: 66},
+      {text: "Çıkış ara", nextStep: 63}
+    ]
+  },
+  {
+    id: 81,
+    text: "Kayıp Klanın Tapınağı'na ulaştın. Burası eski ve mistik bir enerjiyle dolu. Ortada parlayan bir kristal var.",
+    choices: [
+      {text: "Kristali incele", nextStep: 86},
+      {text: "Tapınağı araştır", nextStep: 87}
+    ]
+  },
+  {
+    id: 82,
+    text: "Berat Hoca'nın laboratuvarını sabote ettin. Büyük bir patlama oldu! Okulda kaos başladı.",
+    choices: [
+      {text: "Kaostan faydalan ve kaç", nextStep: 38},
+      {text: "Berat Hoca ile yüzleş", nextStep: 50}
+    ]
+  },
+  {
+    id: 83,
+    text: "İsyancıları durdurmaya çalıştın. Sana karşı çıktılar ve dövüş kaçınılmaz oldu!",
+    fight: true,
+    nextStep: 13
+  },
+  {
+    id: 84,
+    text: "Taş Klanı lideriyle karşılaştın. Sert ve disiplinli biri. Seni dinlemesi için onu ikna etmelisin.",
+    choices: [
+      {text: "İkna etmeye çalış (Karizma)", nextStep: 88, condition: () => player.k >= 10},
+      {text: "Dövüşerek saygısını kazan", nextStep: 89},
+      {text: "Geri dön", nextStep: 77}
+    ]
+  },
+  {
+    id: 85,
+    text: "Kayıp Klanın koruyucusunu yendin! Yaratık, sana 'Kayıp Klanın Sırrı'nı' fısıldadı: 'Gerçek güç, birliktelikte gizlidir.'",
+    choices: [
+      {text: "Sırrı anlamaya çalış", nextStep: 90},
+      {text: "Tünellerden çık", nextStep: 24}
+    ]
+  },
+  {
+    id: 86,
+    text: "Kristali inceledin. İçinden bir enerji akışı hissettin. Bu, Kayıp Klanın gücü olmalı! Gücün arttı!",
+    choices: [
+      {text: "Gücü kullan", nextStep: 91, effect: () => { player.g += 5; player.h += 5; player.k += 5; updatePlayerStatsUI(); }},
+      {text: "Tapınağı araştır", nextStep: 87}
+    ]
+  },
+  {
+    id: 87,
+    text: "Tapınağı araştırdın. Duvarlarda eski resimler ve yazıtlar var. Kayıp Klanın, okulu korumak için kurulduğunu öğrendin.",
+    choices: [
+      {text: "Kristali incele", nextStep: 86},
+      {text: "Çıkış ara", nextStep: 24}
+    ]
+  },
+  {
+    id: 88,
+    text: "Karizmanı kullanarak Taş Klanı liderini ikna ettin. Sana saygı duydu ve ritüele katılmayı kabul etti. 'Diğer liderleri de bulmalısın' dedi.",
+    choices: [
+      {text: "Diğer liderleri bul", nextStep: 92}
+    ]
+  },
+  {
+    id: 89,
+    text: "Taş Klanı lideriyle dövüştün ve onu yendin. Saygısını kazandın ve ritüele katılmayı kabul etti. 'Gücün etkileyici' dedi.",
+    choices: [
+      {text: "Diğer liderleri bul", nextStep: 92}
+    ]
+  },
+  {
+    id: 90,
+    text: "Sırrı anlamaya çalıştın. Kayıp Klanın, tüm klanları bir araya getirmek için çalıştığını ve Berat Hoca'nın da aslında bu amaca hizmet ettiğini fark ettin.",
+    choices: [
+      {text: "Berat Hoca ile konuş", nextStep: 50},
+      {text: "Oyunu Bitir (Gerçek Anlayış)", nextStep: -1}
+    ]
+  },
+  {
+    id: 91,
+    text: "Gücü kullandın. Vücudunda inanılmaz bir enerji hissettin. Artık çok daha güçlüsün!",
+    choices: [
+      {text: "Berat Hoca ile yüzleş", nextStep: 50},
+      {text: "Oyunu Bitir (Süper Güç)", nextStep: -1}
+    ]
+  },
+  {
+    id: 92,
+    text: "Taş Klanı liderini ikna ettin. Şimdi Karahan Klanı liderini bulmalısın. Onlar okul yönetiminde söz sahibi.",
+    choices: [
+      {text: "Karahan Klanı liderini bul", nextStep: 93}
+    ]
+  },
+  {
+    id: 93,
+    text: "Karahan Klanı lideriyle karşılaştın. Entrikacı ve zeki biri. Onu ikna etmek için zekanı kullanmalısın.",
+    choices: [
+      {text: "Zekanı kullan (Karizma/Bilgi)", nextStep: 94, condition: () => player.k >= 12 || storyState.knowsSecret || storyState.hasAncientScroll},
+      {text: "Tehdit et", nextStep: 95},
+      {text: "Geri dön", nextStep: 92}
+    ]
+  },
+  {
+    id: 94,
+    text: "Zekanı ve bilgini kullanarak Karahan Klanı liderini ikna ettin. Ritüele katılmayı kabul etti. 'Sırlar açığa çıkıyor...' diye fısıldadı.",
+    choices: [
+      {text: "Tüm liderleri bir araya getir", nextStep: 96}
+    ]
+  },
+  {
+    id: 95,
+    text: "Karahan Klanı liderini tehdit ettin. Sana karşı çıktı ve dövüş kaçınılmaz oldu!",
+    fight: true,
+    nextStep: 13
+  },
+  {
+    id: 96,
+    text: "Tüm klan liderlerini bir araya getirdin. Birlik Ritüeli'ni gerçekleştirmeye hazırsınız. Berat Hoca da aranızda.",
+    choices: [
+      {text: "Birlik Ritüeli'ni başlat", nextStep: 97}
+    ]
+  },
+  {
+    id: 97,
+    text: "Birlik Ritüeli'ni başlattınız. Tüm klanlar bir araya geldi ve okulda barış sağlandı. Kayıp Klanın sırrı, birlikteliğin gücüymüş.",
+    choices: [
+      {text: "Oyunu Bitir (Gerçek Son: Birlik)", nextStep: -1}
+    ]
+  }
+];
+
+
 const enemyFightingStyles = [
-    {name: "Full Boxing", bonus: {atk: 2, def: 1, speed: 0}}, // atk for strength, def for defense, speed for speed
+    {name: "Full Boxing", bonus: {atk: 2, def: 1, speed: 0}},
     {name: "Hızlı Tekme", bonus: {atk: 0, def: 0, speed: 3}},
     {name: "Savunmacı", bonus: {atk: 0, def: 2, speed: 0}},
-    {name: "Dengesiz", bonus: {atk: 3, def: -1, speed: 0}}, // High attack, low defense
+    {name: "Dengesiz", bonus: {atk: 3, def: -1, speed: 0}},
     {name: "Normal", bonus: {atk: 0, def: 0, speed: 0}}
 ];
 
+const enemyBehaviors = [
+  {name: "Agresif", attackFirstChance: 0.7, canBePersuaded: false},
+  {name: "Temkinli", attackFirstChance: 0.3, canBePersuaded: true},
+  {name: "İkna Edilebilir", attackFirstChance: 0.1, canBePersuaded: true},
+  {name: "Dengesiz", attackFirstChance: 0.5, canBePersuaded: false}
+];
 
 function statSegments(){
   return [
@@ -176,33 +939,41 @@ function trainingSegments(){
 }
 
 const items = [
-    {name: "Sağlık İksiri", type: "consumable", effect: {hp: 10}, description: "10 Can yeniler."},
-    {name: "Güç Bilekliği", type: "permanent", effect: {g: 1}, description: "Gücünü kalıcı olarak 1 artırır."},
-    {name: "Hız Botları", type: "permanent", effect: {h: 1}, description: "Hızını kalıcı olarak 1 artırır."},
-    {name: "Karizma Kolyesi", type: "permanent", effect: {k: 1}, description: "Karizmanı kalıcı olarak 1 artırır."}
+    {name: "Labubu", type: "permanent", effect: {g:1, h:1, k:1}, description: "Tüm statlar +1 artırır.", rarity: 5},
+    {name: "Sikitin Donu", type: "permanent", effect: {h:-2}, description: "Hızı 2 azaltır.", rarity: 10},
+    {name: "Eşmenin Boks Eldivenleri", type: "permanent", effect: {g:2}, description: "Gücünü 2 artırır.", rarity: 3},
+    {name: "Sağlık İksiri", type: "consumable", effect: {hp: 10}, description: "10 Can yeniler.", rarity: 20},
+    {name: "Gizli Günlük", type: "story", effect: {}, description: "Berat Hoca'nın planlarını anlatan günlük.", rarity: 1},
+    {name: "Klan Rozeti", type: "story", effect: {}, description: "Demiralay klanına ait eski bir rozet.", rarity: 2},
+    {name: "Paslı Anahtar", type: "story", effect: {}, description: "Eski ve paslı bir anahtar. Bir yerleri açabilir.", rarity: 1}, // Yeni eşya
+    {name: "Demiralay Yüzüğü", type: "story", effect: {}, description: "Demiralay klanına ait mistik bir yüzük.", rarity: 1}, // Yeni eşya
+    {name: "Antik Parşömen", type: "story", effect: {}, description: "Klanların birleşimi için gerekli ritüeli anlatan eski bir parşömen.", rarity: 1} // Yeni eşya
 ];
 
 const enemyNames = [
     {name: "YiğitAysu", minZone: 1, maxZone: 2},
     {name: "YiğitAysuMommy", minZone: 2, maxZone: 3},
     {name: "YiğitAysuDaddy", minZone: 3, maxZone: 4},
-    {name: "YiğitAysuMommyAndDaddy", minZone: 4, maxZone: 5}
+    {name: "YiğitAysuMommyAndDaddy", minZone: 4, maxZone: 5},
+    {name: "Berat Hoca'nın Koruması", minZone: 3, maxZone: 5},
+    {name: "Örgüt Üyesi", minZone: 2, maxZone: 4},
+    {name: "İsyancı Öğrenci", minZone: 1, maxZone: 3}, // Yeni düşman
+    {name: "Kayıp Klan Koruyucusu", minZone: 4, maxZone: 5} // Yeni düşman
 ];
 
-// Location-specific event types
 const locationEvents = {
     "Okul": [
-        {name: "Dövüş", weight: 70, handler: "startBattle"},
-        {name: "Eşya Bulma", weight: 15, handler: "findItem"},
-        {name: "Hikaye", weight: 15, handler: "storyEvent"}
+        {name: "Dövüş", weight: 60, handler: "startBattle"},
+        {name: "Eşya Bulma", weight: 20, handler: "findItem"},
+        {name: "Hikaye", weight: 20, handler: "storyEvent"}
     ],
     "Fırıngo Önü": [
         {name: "Dövüş", weight: 80, handler: "startBattle"},
         {name: "Eşya Bulma", weight: 20, handler: "findItem"}
     ],
     "NMC'nin Yaylası": [
-        {name: "Dinlenme", weight: 90, handler: "rest"}, // Increased rest chance
-        {name: "Training", weight: 10, handler: "openTrainingSelection"} // Training chance 10%
+        {name: "Dinlenme", weight: 90, handler: "rest"},
+        {name: "Training", weight: 10, handler: "openTrainingSelection"}
     ],
     "Sokak": [
         {name: "Dövüş", weight: 60, handler: "startBattle"},
@@ -214,7 +985,6 @@ const locationEvents = {
     ]
 };
 
-
 /* ========== UI refs ========== */
 const characterCreationPanel = document.getElementById("characterCreationPanel");
 const selectBtn = document.getElementById("selectBtn");
@@ -223,7 +993,6 @@ const stepLabel = document.getElementById("stepLabel");
 const stepResult = document.getElementById("stepResult");
 const optionsList = document.getElementById("optionsList");
 
-// Character creation stats display
 const statClanEl = document.getElementById("statClan");
 const statGucEl = document.getElementById("statGuc");
 const statHizEl = document.getElementById("statHiz");
@@ -234,7 +1003,6 @@ const statLevel = document.getElementById("statLevel");
 const statExp = document.getElementById("statExp");
 const inventoryEl = document.getElementById("inventory");
 
-// Game play stats display (smaller, at bottom right)
 const gameContainer = document.getElementById("gameContainer");
 const gameStatsDisplay = document.getElementById("gameStatsDisplay");
 const gameStatClanEl = document.getElementById("gameStatClan");
@@ -247,7 +1015,6 @@ const gameStatLevel = document.getElementById("gameStatLevel");
 const gameStatExp = document.getElementById("gameStatExp");
 const gameInventoryEl = document.getElementById("gameInventory");
 const fightsWonDisplay = document.getElementById("fightsWonDisplay");
-
 
 const startGameBtn = document.getElementById("startGameBtn");
 const adventureArea = document.getElementById("adventureArea");
@@ -266,25 +1033,24 @@ let currentOptions = [];
 let selecting = false;
 let selectedClan=null, selectedGuc=null, selectedHiz=null, selectedKarizma=null, selectedHP=null, selectedStyle=null;
 
-/* player runtime */
 let player = {g:0,h:0,k:0, style:null, level:1, exp:0, HP:0, maxHP:0, inventory:[]};
 let currentEnemy = null;
 let consecutiveEscapes = 0;
-let fightsWon = 0; // Track won fights
-let currentZone = 1; // Zone will now be tied to overall game progress, not location
+let fightsWon = 0;
+let currentZone = 1;
 
-// Store original selectBtn.onclick for restoring after training
-let originalSelectBtnOnClick = null;
+let originalSelectBtnOnClick = null; // Bu değişkenin global scope'ta tanımlanması önemli
 
 /* ========== HELPERS ========== */
 function pickWeightedIndex(arr){
   const total = arr.reduce((s,x)=>s+(x.weight||0),0);
+  if (total === 0) return -1; // Hiç ağırlık yoksa -1 döndür
   let r = Math.random()*total;
   for(let i=0;i<arr.length;i++){
     if(r < (arr[i].weight||0)) return i;
     r -= (arr[i].weight||0);
   }
-  return arr.length-1;
+  return arr.length-1; // Son elemanı döndür (küçük kaymalar için)
 }
 
 function getOptionsForStep(step){
@@ -303,6 +1069,11 @@ function renderOptions(options){
   optionsList.innerHTML = "";
   const totalWeight = options.reduce((sum, opt) => sum + (opt.weight || 0), 0);
 
+  if (options.length === 0) {
+      optionsList.innerHTML = "<li>Seçenek bulunamadı.</li>";
+      return;
+  }
+
   options.forEach(opt => {
     const li = document.createElement("li");
     const probability = totalWeight > 0 ? ((opt.weight / totalWeight) * 100).toFixed(1) : 0;
@@ -314,15 +1085,22 @@ function renderOptions(options){
 
 function animateSelection(selectedIndex, callback){
   const items = Array.from(optionsList.children);
+  if (items.length === 0 || selectedIndex === -1) { // Seçenek yoksa veya geçersiz indeks
+      callback();
+      return;
+  }
+
   let currentIndex = 0;
   let animationCount = 0;
-  const maxAnimations = items.length * 3;
+  const maxAnimations = items.length * 3; // Animasyon süresini artırabiliriz
 
   const interval = setInterval(() => {
     if (animationCount >= maxAnimations + selectedIndex) {
       clearInterval(interval);
       items.forEach(item => item.classList.remove("highlight"));
-      items[selectedIndex].classList.add("highlight");
+      if (selectedIndex !== -1) { // Geçersiz indeks durumunda highlight yapma
+        items[selectedIndex].classList.add("highlight");
+      }
       setTimeout(callback, 500);
       return;
     }
@@ -402,7 +1180,12 @@ function updateStep(){
         renderOptions(options);
         animateSelection(guaranteedIndex, () => handleSelection({value: gs}, true));
       } else {
-        handleSelection({value: gs}, true);
+        // Guaranteed style bulunamazsa, normal akışa devam et
+        console.warn(`Guaranteed style '${selectedClan.guaranteedStyle}' not found in fightingStyles. Proceeding with normal selection.`);
+        currentOptions = getOptionsForStep(step);
+        renderOptions(currentOptions);
+        selectBtn.disabled = false;
+        selecting = false;
       }
       return;
     }
@@ -413,29 +1196,30 @@ function updateStep(){
 }
 
 function finalizeCreation(){
+  // Eğer stil seçilmediyse veya garanti stil bulunamadıysa rastgele bir stil ata
   if(!selectedStyle) {
-    selectedStyle = fightingStyles[pickWeightedIndex(fightingStyles)];
+    const defaultStyleIndex = pickWeightedIndex(fightingStyles);
+    selectedStyle = fightingStyles[defaultStyleIndex !== -1 ? defaultStyleIndex : 0]; // En azından ilk stili ata
   }
+  
+  // Başlangıç değerleri için null kontrolü ekle
   player.g = (selectedGuc || 1) + (selectedClan?.bonus?.g || 0) + (selectedStyle?.bonus || 0);
   player.h = (selectedHiz || 1) + (selectedClan?.bonus?.h || 0);
   player.k = (selectedKarizma || 1) + (selectedClan?.bonus?.k || 0);
   player.style = selectedStyle?.name || "Yok";
   player.level = 1; player.exp = 0;
-  // Base HP is 10, plus selectedHP, plus bonus from stats
   player.maxHP = 10 + (selectedHP || 0) + Math.floor((player.g + player.h + player.k)/3);
   player.HP = player.maxHP;
 
-  // Apply Karahan clan bonus for School location
-  if (selectedClan.name === "Karahan") {
-      player.g += 3; // Initial bonus, can be applied here or when entering school
+  if (selectedClan && selectedClan.name === "Karahan") { // selectedClan null olabilir
+      player.g += 3;
       gameLogInsert("Karahan klanı olduğun için Okul'da +3 Güç bonusu kazandın!");
   }
-
 
   statGucEl.textContent = player.g;
   statHizEl.textContent = player.h;
   statKarizmaEl.textContent = player.k;
-  statClanEl.textContent = selectedClan.name;
+  statClanEl.textContent = selectedClan ? selectedClan.name : "Bilinmiyor"; // null kontrolü
   statStyleEl.textContent = player.style;
   statHPEl.textContent = `${player.HP}/${player.maxHP}`;
   statLevel.textContent = player.level;
@@ -451,7 +1235,8 @@ function finalizeCreation(){
 /* Event Listeners for Character Creation */
 resetBtn.addEventListener("click", init);
 
-// Define the original onclick function for selectBtn globally
+// originalSelectBtnOnClick'in tanımlanması init fonksiyonunun dışında olmalı
+// Aksi takdirde her init çağrıldığında yeniden tanımlanır ve eski event listener'lar kalır.
 originalSelectBtnOnClick = () => {
   if (selecting) return;
   selecting = true;
@@ -459,12 +1244,17 @@ originalSelectBtnOnClick = () => {
   stepResult.textContent = "";
 
   const selectedIndex = pickWeightedIndex(currentOptions);
+  if (selectedIndex === -1) { // Seçenek yoksa
+      stepResult.textContent = "Seçim yapılamadı, seçenek yok.";
+      selectBtn.disabled = false;
+      selecting = false;
+      return;
+  }
   animateSelection(selectedIndex, () => {
     handleSelection(currentOptions[selectedIndex]);
   });
 };
 selectBtn.addEventListener("click", originalSelectBtnOnClick);
-
 
 /* ========== GAME LOOP (Adventure) ========== */
 function startGame(){
@@ -473,17 +1263,103 @@ function startGame(){
 
   document.getElementById("gameIntro").classList.add("hidden");
   gameLog.innerHTML = "";
-  fightsWon = 0; // Reset fights won
+  fightsWon = 0;
   currentZone = 1;
-  gameLogInsert("Karanlık bir odada gözlerini açtın. Nereye gideceksin?");
+  storyState.consecutiveFights = 0; // Yeni: Ardışık dövüş sayacını sıfırla
+  
+  // Hikayeyi başlat
+  gameLogInsert("💀 Börsgame: Lise Gizemi - Kayıp Klanın Sırrı 💀"); // Başlık güncellendi
+  gameLogInsert("Okulun eski arşiv odasında baygın halde uyandın...");
+  
   updatePlayerStatsUI();
   updateFightsWonDisplay();
-  renderLocationActions();
+  
+  // Hikayeyi başlat
+  storyState.step = 0;
+  showStoryStep();
+}
+
+function showStoryStep(){
+  const step = storyEvents.find(e => e.id === storyState.step);
+  if(!step) {
+    gameLogInsert("Hikaye adımı bulunamadı veya hikaye bitti. Konum eylemlerine dönülüyor.");
+    renderLocationActions();
+    return;
+  }
+
+  eventDescriptionDiv.innerHTML = `<div class="story-text">${step.text}</div>`;
+  eventActionsDiv.innerHTML = "";
+
+  if(step.effect) step.effect();
+
+  if(step.fight){
+    gameLogInsert(`Dövüş başlıyor: ${currentEnemy ? currentEnemy.name : 'Düşman'} ile karşılaştın!`);
+    // Dövüş öncesi düşmanı oluştur
+    currentEnemy = generateEnemy(currentZone);
+    startBattle();
+    // Dövüş sonrası hikaye adımına geçiş, dövüş sonucu belirlendikten sonra yapılmalı
+    // Bu kısım onEnemyDefeated veya onPlayerDefeated içinde yönetilmeli.
+    // Şimdilik nextStep'i burada kullanmıyoruz, dövüş bitince proceedAfterEvent çağrılacak.
+    return;
+  }
+
+  if(step.choices){
+    step.choices.forEach(choice => {
+      // Koşullu seçenekler için kontrol
+      if (choice.condition && !choice.condition()) {
+          return; // Koşul sağlanmıyorsa butonu gösterme
+      }
+
+      const btn = document.createElement("button");
+      btn.textContent = choice.text;
+      btn.onclick = () => {
+        if(choice.effect) choice.effect();
+        gameLogInsert(`Seçim: ${choice.text}`);
+        if(choice.handler){ // Özel handler varsa
+            if (choice.handler === "startFinalBossBattle") {
+                startFinalBossBattle();
+            }
+            // Diğer handler'lar buraya eklenebilir
+        } else if(choice.nextStep !== null && choice.nextStep !== -1){ // -1 özel bitiş adımı
+          storyState.step = choice.nextStep;
+          showStoryStep();
+        } else if (choice.nextStep === -1) { // Oyun bitişi
+            endGame(true); // Varsayılan olarak iyi son
+        }
+        else { // nextStep yoksa veya null ise konum eylemlerine dön
+          renderLocationActions();
+        }
+      };
+      eventActionsDiv.appendChild(btn);
+    });
+  } else {
+    const btn = document.createElement("button");
+    btn.textContent = "Devam et";
+    btn.onclick = () => {
+      if(step.nextStep !== null && step.nextStep !== -1){
+        storyState.step = step.nextStep;
+        showStoryStep();
+      } else if (step.nextStep === -1) {
+          endGame(true);
+      }
+      else {
+        renderLocationActions();
+      }
+    };
+    eventActionsDiv.appendChild(btn);
+  }
 }
 
 function renderLocationActions(){
   eventActionsDiv.innerHTML = "";
-  const locations = ["Okul", "Fırıngo Önü", "NMC'nin Yaylası", "Sokak"];
+  eventDescriptionDiv.innerHTML = "Nereye gitmek istersin?"; // Açıklama ekle
+  const locations = ["Okul", "Fırıngo Önü", "Sokak"];
+
+  // NMC'nin Yaylası mekaniği güncellendi
+  // Sadece ardışık 2 dövüşten sonra bir kez erişilebilir olsun
+  if(storyState.consecutiveFights >= 2){
+    locations.push("NMC'nin Yaylası");
+  }
 
   locations.forEach(loc => {
     const btn = document.createElement("button");
@@ -498,7 +1374,6 @@ function renderLocationActions(){
     finalBossLocBtn.onclick = () => exploreLocation("Berat Hocamın Antalya'daki Tatil Köyü");
     eventActionsDiv.appendChild(finalBossLocBtn);
   }
-  eventDescriptionDiv.innerHTML = "";
 }
 
 function exploreLocation(locationName){
@@ -506,37 +1381,46 @@ function exploreLocation(locationName){
   eventDescriptionDiv.innerHTML = `<strong>${locationName}</strong>`;
 
   const eventsForLocation = locationEvents[locationName];
-  if (!eventsForLocation) {
-      gameLogInsert("Bu konumda henüz bir olay tanımlanmamış.");
+  if (!eventsForLocation || eventsForLocation.length === 0) {
+      gameLogInsert("Bu konumda henüz bir olay tanımlanmamış veya olay yok.");
       renderLocationActions();
       return;
   }
 
   const eventIndex = pickWeightedIndex(eventsForLocation);
+  if (eventIndex === -1) { // pickWeightedIndex -1 döndürürse
+      gameLogInsert("Bu konumda uygun bir olay bulunamadı.");
+      renderLocationActions();
+      return;
+  }
   const event = eventsForLocation[eventIndex];
 
   gameLogInsert(`Bir ${event.name} olayıyla karşılaştın.`);
 
-  // Special handling for NMC's Yaylası and Final Boss location
-  if (locationName === "NMC'nin Yaylası") {
-      if (event.handler === "openTrainingSelection") {
-          openTrainingSelection(); // Directly open training
-      } else if (event.handler === "rest") {
-          rest();
-      }
-  } else if (locationName === "Berat Hocamın Antalya'daki Tatil Köyü") {
+  // Handler'ları doğrudan çağır
+  if (event.handler === "openTrainingSelection") {
+      openTrainingSelection();
+      storyState.consecutiveFights = 0; // Yaylaya gidince sayaç sıfırlanır
+  } else if (event.handler === "rest") {
+      rest();
+      storyState.consecutiveFights = 0; // Yaylaya gidince sayaç sıfırlanır
+  } else if (event.handler === "startFinalBossBattle") {
       startFinalBossBattle();
-  }
-  else { // Normal event handling for other locations
-      if (event.handler === "startBattle") {
-          startBattle();
-      } else if (event.handler === "findItem") {
-          findItem();
-      } else if (event.handler === "rest") {
-          rest();
-      } else if (event.handler === "storyEvent") {
-          storyEvent();
-      }
+  } else if (event.handler === "startBattle") {
+      encounterEnemy();
+  } else if (event.handler === "findItem") {
+      findItem();
+  } else if (event.handler === "storyEvent") {
+      // Eğer bir hikaye olayı tetikleniyorsa, storyState.step'i güncelle ve hikayeyi göster
+      // Burada rastgele bir hikaye adımı seçmek yerine, belirli bir hikaye akışını takip etmek daha mantıklı olabilir.
+      // Şimdilik, mevcut storyState.step'i kullanmaya devam edelim veya yeni bir başlangıç noktası belirleyelim.
+      // En iyisi, storyEvent handler'ı için özel bir hikaye ID'si tanımlamak.
+      // Örneğin: {name: "Hikaye", weight: 10, handler: "storyEvent", storyId: 54}
+      // Şimdilik, sadece mevcut hikaye adımını tekrar gösterelim veya bir sonraki adımı tetikleyelim.
+      showStoryStep(); // Mevcut hikaye adımını tekrar gösterir veya nextStep'e gider
+  } else {
+      gameLogInsert("Bilinmeyen olay handler'ı.");
+      proceedAfterEvent(); // Bilinmeyen durumda devam et
   }
 }
 
@@ -557,37 +1441,128 @@ function generateEnemy(zone, isBoss = false){
 
       let enemyNameCandidates = enemyNames.filter(e => zone >= e.minZone && zone <= e.maxZone);
       if (enemyNameCandidates.length === 0) {
-          enemyNameCandidates = enemyNames; // Fallback
+          enemyNameCandidates = enemyNames; // Eğer uygun düşman yoksa tüm listeyi kullan
       }
       name = enemyNameCandidates[Math.floor(Math.random() * enemyNameCandidates.length)].name;
 
-      // Apply random enemy fighting style
       const randomStyle = enemyFightingStyles[Math.floor(Math.random() * enemyFightingStyles.length)];
-      name = `${randomStyle.name} ${name}`; // Combine name and style
+      name = `${randomStyle.name} ${name}`;
       atk += (randomStyle.bonus.atk || 0);
       def += (randomStyle.bonus.def || 0);
-      hp += (randomStyle.bonus.speed || 0); // Using speed for HP bonus for simplicity, can be adjusted
+      hp += (randomStyle.bonus.speed || 0);
   }
 
-  return {name, atk, def, HP: hp, maxHP: hp, zone};
+  const behavior = enemyBehaviors[Math.floor(Math.random() * enemyBehaviors.length)];
+  return {name, atk, def, HP: hp, maxHP: hp, zone, behavior};
 }
 
-function startBattle(){
+function encounterEnemy(){
   currentEnemy = generateEnemy(currentZone);
   eventDescriptionDiv.innerHTML = `<strong>Bölge ${currentEnemy.zone} — Karşında: ${currentEnemy.name}</strong>
     <p>Can: <span class="enemy-hp">${currentEnemy.HP}/${currentEnemy.maxHP}</span> · Saldırı: ${currentEnemy.atk} · Savunma: ${currentEnemy.def}</p>`;
-  gameLogInsert(`${currentEnemy.name} sana saldırmak için yaklaşıyor!`);
+
+  gameLogInsert(`${currentEnemy.name} ile karşılaştın!`);
+
+  if(Math.random() < currentEnemy.behavior.attackFirstChance){
+    gameLogInsert(`${currentEnemy.name} seni hemen saldırdı!`);
+    // Düşman ilk saldırırsa, oyuncu hasar alır ve sonra savaş başlar
+    setTimeout(() => {
+        const enemyDamage = calculateDamage(currentEnemy.atk, player.g);
+        player.HP -= enemyDamage;
+        gameLogInsert(`${currentEnemy.name} seni ilk saldırıda vurdu! ${enemyDamage} hasar aldın. (Can: <span class="player-hp">${player.HP}/${player.maxHP}</span>)`);
+        updatePlayerStatsUI();
+        if(player.HP <= 0) {
+            onPlayerDefeated();
+        } else {
+            renderBattleActions(); // Oyuncu hayattaysa savaş eylemlerini göster
+        }
+    }, 1000);
+  } else {
+    showEnemyEncounterOptions();
+  }
+}
+
+function showEnemyEncounterOptions(){
+  eventActionsDiv.innerHTML = "";
+
+  const attackBtn = document.createElement("button");
+  attackBtn.textContent = "Saldır";
+  attackBtn.onclick = () => startBattle(); // startBattle'a enemyStarts parametresi kaldırıldı
+
+  const runBtn = document.createElement("button");
+  runBtn.textContent = "Kaç";
+  runBtn.onclick = () => attemptEscape();
+
+  const greetBtn = document.createElement("button");
+  greetBtn.textContent = "Selam Ver";
+  greetBtn.onclick = () => attemptGreet();
+
+  eventActionsDiv.appendChild(attackBtn);
+  eventActionsDiv.appendChild(runBtn);
+  eventActionsDiv.appendChild(greetBtn);
+}
+
+function attemptGreet(){
+  disableEventActions(true);
+
+  if(!currentEnemy.behavior.canBePersuaded){
+    gameLogInsert(`${currentEnemy.name} selamını umursamadı ve saldırdı!`);
+    setTimeout(() => { // Gecikme ekle
+        const enemyDamage = calculateDamage(currentEnemy.atk, player.g);
+        player.HP -= enemyDamage;
+        gameLogInsert(`${currentEnemy.name} seni vurdu! ${enemyDamage} hasar aldın. (Can: <span class="player-hp">${player.HP}/${player.maxHP}</span>)`);
+        updatePlayerStatsUI();
+        if(player.HP <= 0) {
+            onPlayerDefeated();
+        } else {
+            renderBattleActions(); // Oyuncu hayattaysa savaş eylemlerini göster
+        }
+    }, 1000);
+    return;
+  }
+
+  const charismaFactor = player.k / (player.k + currentEnemy.atk);
+  if(Math.random() < charismaFactor){
+    gameLogInsert(`Selamın işe yaradı! ${currentEnemy.name} seni geçiyor.`);
+    onEnemyDefeated(true, true);
+  } else {
+    gameLogInsert(`${currentEnemy.name} selamını reddetti ve saldırdı!`);
+    setTimeout(() => { // Gecikme ekle
+        const enemyDamage = calculateDamage(currentEnemy.atk, player.g);
+        player.HP -= enemyDamage;
+        gameLogInsert(`${currentEnemy.name} seni vurdu! ${enemyDamage} hasar aldın. (Can: <span class="player-hp">${player.HP}/${player.maxHP}</span>)`);
+        updatePlayerStatsUI();
+        if(player.HP <= 0) {
+            onPlayerDefeated();
+        } else {
+            renderBattleActions(); // Oyuncu hayattaysa savaş eylemlerini göster
+        }
+    }, 1000);
+  }
+}
+
+function startBattle(){ // enemyStarts parametresi kaldırıldı, çünkü encounterEnemy'de ilk saldırı yönetiliyor
+  eventDescriptionDiv.innerHTML = `<strong>Bölge ${currentEnemy.zone} — Karşında: ${currentEnemy.name}</strong>
+    <p>Can: <span class="enemy-hp">${currentEnemy.HP}/${currentEnemy.maxHP}</span> · Saldırı: ${currentEnemy.atk} · Savunma: ${currentEnemy.def}</p>`;
+  gameLogInsert(`${currentEnemy.name} ile dövüş başladı!`);
+
   renderBattleActions();
+  disableEventActions(false); // Eylemleri tekrar etkinleştir
 }
 
 function startFinalBossBattle(){
-    currentEnemy = generateEnemy(currentZone, true); // Generate boss
+    currentEnemy = generateEnemy(currentZone, true);
+    if(storyState.hasAlly){
+        currentEnemy.atk = Math.max(5, currentEnemy.atk - 5);
+        currentEnemy.def = Math.max(3, currentEnemy.def - 3);
+        gameLogInsert("Müttefikin sayesinde final boss biraz zayıfladı.");
+    }
     eventDescriptionDiv.innerHTML = `<strong>SON DÖVÜŞ — Karşında: ${currentEnemy.name}</strong>
         <p>Can: <span class="enemy-hp">${currentEnemy.HP}/${currentEnemy.maxHP}</span> · Saldırı: ${currentEnemy.atk} · Savunma: ${currentEnemy.def}</p>`;
     gameLogInsert(`Berat Hoca'nın tatil köyüne ulaştın! Final Boss: ${currentEnemy.name} seni bekliyor!`);
     renderBattleActions();
+    disableEventActions(false);
 }
-
 
 function renderBattleActions(){
   eventActionsDiv.innerHTML = "";
@@ -612,6 +1587,12 @@ function calculateDamage(attackerStat, defenderStat){
 
 function performAttack(){
   disableEventActions(true);
+  if (!currentEnemy) { // Düşman yoksa hata önle
+      gameLogInsert("Hata: Dövüşülecek düşman yok.");
+      proceedAfterEvent();
+      return;
+  }
+
   const playerDamage = calculateDamage(player.g, currentEnemy.def);
   currentEnemy.HP -= playerDamage;
   gameLogInsert(`Saldırdın! ${currentEnemy.name} ${playerDamage} hasar aldı. (Can: <span class="enemy-hp">${currentEnemy.HP}/${currentEnemy.maxHP}</span>)`);
@@ -620,17 +1601,29 @@ function performAttack(){
     gameLogInsert(`${currentEnemy.name} yenildi!`);
     onEnemyDefeated(false);
   } else {
-    const enemyDamage = calculateDamage(currentEnemy.atk, player.g);
-    player.HP -= enemyDamage;
-    gameLogInsert(`${currentEnemy.name} sana saldırdı! ${enemyDamage} hasar aldın. (Can: <span class="player-hp">${player.HP}/${player.maxHP}</span>)`);
-    updatePlayerStatsUI();
-    if(player.HP <= 0) return onPlayerDefeated();
-    disableEventActions(false);
+    // Düşman saldırısı gecikmeli olsun
+    setTimeout(() => {
+        const enemyDamage = calculateDamage(currentEnemy.atk, player.g);
+        player.HP -= enemyDamage;
+        gameLogInsert(`${currentEnemy.name} sana saldırdı! ${enemyDamage} hasar aldın. (Can: <span class="player-hp">${player.HP}/${player.maxHP}</span>)`);
+        updatePlayerStatsUI();
+        if(player.HP <= 0) {
+            onPlayerDefeated();
+        } else {
+            disableEventActions(false); // Oyuncu hayattaysa eylemleri tekrar etkinleştir
+        }
+    }, 1000);
   }
 }
 
 function attemptEscape(){
   disableEventActions(true);
+  if (!currentEnemy) {
+      gameLogInsert("Hata: Kaçılacak düşman yok.");
+      proceedAfterEvent();
+      return;
+  }
+
   const success = chanceSuccess(player.h, currentEnemy.atk);
   if(success){
     consecutiveEscapes++;
@@ -638,48 +1631,85 @@ function attemptEscape(){
     onEnemyEscaped();
   } else {
     consecutiveEscapes = 0;
-    const enemyDamage = calculateDamage(currentEnemy.atk, player.h / 2);
-    player.HP -= enemyDamage;
-    gameLogInsert(`Kaçış başarısız! ${currentEnemy.name} sana saldırdı ve ${enemyDamage} hasar aldın. (Can: <span class="player-hp">${player.HP}/${player.maxHP}</span>)`);
-    updatePlayerStatsUI();
-    if(player.HP <= 0) return onPlayerDefeated();
-    disableEventActions(false);
+    // Kaçış başarısız olursa düşman saldırır
+    setTimeout(() => {
+        const enemyDamage = calculateDamage(currentEnemy.atk, player.h / 2); // Hız savunmaya etki etsin
+        player.HP -= enemyDamage;
+        gameLogInsert(`Kaçış başarısız! ${currentEnemy.name} sana saldırdı ve ${enemyDamage} hasar aldın. (Can: <span class="player-hp">${player.HP}/${player.maxHP}</span>)`);
+        updatePlayerStatsUI();
+        if(player.HP <= 0) {
+            onPlayerDefeated();
+        } else {
+            disableEventActions(false); // Oyuncu hayattaysa eylemleri tekrar etkinleştir
+        }
+    }, 1000);
   }
 }
 
 function attemptPersuade(){
   disableEventActions(true);
+  if (!currentEnemy) {
+      gameLogInsert("Hata: İkna edilecek düşman yok.");
+      proceedAfterEvent();
+      return;
+  }
+
+  if(!currentEnemy.behavior.canBePersuaded){
+    gameLogInsert(`${currentEnemy.name} ikna edilemez!`);
+    setTimeout(() => {
+        const enemyDamage = calculateDamage(currentEnemy.atk, player.k / 2); // Karizma savunmaya etki etsin
+        player.HP -= enemyDamage;
+        gameLogInsert(`${currentEnemy.name} ikna olmadı ve ${enemyDamage} hasar aldın. (Can: <span class="player-hp">${player.HP}/${player.maxHP}</span>)`);
+        updatePlayerStatsUI();
+        if(player.HP <= 0) {
+            onPlayerDefeated();
+        } else {
+            disableEventActions(false);
+        }
+    }, 1000);
+    return;
+  }
+
   const success = chanceSuccess(player.k, currentEnemy.atk);
   if(success){
     gameLogInsert(`İkna başarılı! ${currentEnemy.name} geri çekildi.`);
     onEnemyDefeated(true);
   } else {
-    const enemyDamage = calculateDamage(currentEnemy.atk, player.k / 2);
-    player.HP -= enemyDamage;
-    gameLogInsert(`İkna başarısız! ${currentEnemy.name} ikna olmadı ve ${enemyDamage} hasar aldın. (Can: <span class="player-hp">${player.HP}/${player.maxHP}</span>)`);
-    updatePlayerStatsUI();
-    if(player.HP <= 0) return onPlayerDefeated();
-    disableEventActions(false);
+    setTimeout(() => {
+        const enemyDamage = calculateDamage(currentEnemy.atk, player.k / 2);
+        player.HP -= enemyDamage;
+        gameLogInsert(`İkna başarısız! ${currentEnemy.name} ikna olmadı ve ${enemyDamage} hasar aldın. (Can: <span class="player-hp">${player.HP}/${player.maxHP}</span>)`);
+        updatePlayerStatsUI();
+        if(player.HP <= 0) {
+            onPlayerDefeated();
+        } else {
+            disableEventActions(false);
+        }
+    }, 1000);
   }
 }
 
-/* After Battle/Event Outcomes */
-function onEnemyDefeated(byPersuade){
+function onEnemyDefeated(byPersuade = false, isGreeted = false){
   consecutiveEscapes = 0;
-  player.exp += 10 + currentEnemy.zone * 2;
-  gameLogInsert(`Düşman alt edildi. EXP +${10 + currentEnemy.zone * 2} (toplam ${player.exp})`);
+  let expGain = 10 + currentEnemy.zone * 2;
+  if(byPersuade || isGreeted){ // İkna veya selam ile bitince daha az EXP
+    expGain = Math.floor(expGain * 0.5);
+  }
+  player.exp += expGain;
+  gameLogInsert(`Düşman alt edildi. EXP +${expGain} (toplam ${player.exp})`);
   updatePlayerStatsUI();
 
-  if (currentEnemy.name === "Berat Hoca (Final Boss)") {
+  if (currentEnemy && currentEnemy.name === "Berat Hoca (Final Boss)") {
       gameLogInsert("Tebrikler! Berat Hoca'yı yendin ve oyunu tamamladın!");
       endGame(true);
       return;
   }
 
-  fightsWon++; // Increment fights won
+  fightsWon++;
+  storyState.consecutiveFights++; // Ardışık dövüş sayacını artır
   updateFightsWonDisplay();
 
-  // Training chance after battle: 7%
+  // Dövüş sonrası training şansı
   if(Math.random() < 0.07){
     gameLogInsert("Şanslısın! Dövüş sonrası training seçimi açıldı.");
     openTrainingSelection();
@@ -697,9 +1727,10 @@ function onEnemyEscaped(){
       return;
     } else {
       gameLogInsert("Training seçimi gelmedi.");
-      consecutiveEscapes = 0;
+      consecutiveEscapes = 0; // Reset
     }
   }
+  storyState.consecutiveFights = 0; // Kaçınca ardışık dövüş sayacı sıfırlanır
   proceedAfterEvent();
 }
 
@@ -709,25 +1740,40 @@ function onPlayerDefeated(){
 }
 
 function findItem(){
-    const itemIndex = Math.floor(Math.random() * items.length);
-    const foundItem = items[itemIndex];
-    gameLogInsert(`Bir ${foundItem.name} buldun! ${foundItem.description}`);
-    player.inventory.push(foundItem);
-    updateInventoryUI();
+    const totalWeight = items.reduce((sum, item) => sum + (1 / item.rarity), 0);
+    let r = Math.random() * totalWeight;
+    let selectedItem = null;
+    for(const item of items){
+        r -= (1 / item.rarity);
+        if(r <= 0){
+            selectedItem = item;
+            break;
+        }
+    }
+    if(!selectedItem) selectedItem = items[items.length -1]; // Hiçbir şey bulunamazsa son item
 
-    if (foundItem.type === "permanent") {
-        if (foundItem.effect.g) player.g += foundItem.effect.g;
-        if (foundItem.effect.h) player.h += foundItem.effect.h;
-        if (foundItem.effect.k) player.k += foundItem.effect.k;
-        gameLogInsert(`${foundItem.name} etkileri uygulandı.`);
+    gameLogInsert(`Bir ${selectedItem.name} buldun! ${selectedItem.description}`);
+    
+    if (selectedItem.type === "permanent") {
+        player.inventory.push(selectedItem); // Envantere ekle
+        if (selectedItem.effect.g) player.g += selectedItem.effect.g;
+        if (selectedItem.effect.h) player.h += selectedItem.effect.h;
+        if (selectedItem.effect.k) player.k += selectedItem.effect.k;
+        gameLogInsert(`${selectedItem.name} etkileri uygulandı.`);
         updatePlayerStatsUI();
-    } else if (foundItem.type === "consumable") {
-        if (foundItem.effect.hp) {
-            player.HP = Math.min(player.maxHP, player.HP + foundItem.effect.hp);
-            gameLogInsert(`${foundItem.name} kullanıldı. Canın ${foundItem.effect.hp} arttı.`);
+        updateInventoryUI();
+    } else if (selectedItem.type === "consumable") {
+        if (selectedItem.effect.hp) {
+            player.HP = Math.min(player.maxHP, player.HP + selectedItem.effect.hp);
+            gameLogInsert(`${selectedItem.name} kullanıldı. Canın ${selectedItem.effect.hp} arttı.`);
             updatePlayerStatsUI();
         }
-        player.inventory = player.inventory.filter(item => item !== foundItem);
+        // Tüketilebilir eşyalar envantere eklenmez, hemen kullanılır ve kaybolur.
+        // Eğer envanterde görünmesini istiyorsanız, bu kısmı değiştirmelisiniz.
+        // player.inventory = player.inventory.filter(item => item !== selectedItem); // Bu satır yanlış, çünkü item envantere hiç eklenmedi.
+        // updateInventoryUI(); // Envanter değişmediği için bu çağrıya gerek yok
+    } else { // Story item'lar veya diğer tipler
+        player.inventory.push(selectedItem);
         updateInventoryUI();
     }
     proceedAfterEvent();
@@ -738,50 +1784,31 @@ function rest(){
     player.HP = Math.min(player.maxHP, player.HP + hpRestored);
     gameLogInsert(`Dinlendin ve ${hpRestored} Can yeniledin. (Can: <span class="player-hp">${player.HP}/${player.maxHP}</span>)`);
     updatePlayerStatsUI();
-    proceedAfterEvent();
-}
-
-function storyEvent(){
-    const stories = [
-        "Uzaklardan gelen garip sesler duyuyorsun. Ne anlama geldiğini bilmiyorsun.",
-        "Duvarlarda eski semboller var. Onları çözemiyorsun ama bir anlamı olmalı.",
-        "Soğuk bir rüzgar esiyor, sanki bir şey seni izliyormuş gibi hissediyorsun.",
-        "Yerde paslı bir anahtar buldun, ama hangi kapıyı açtığını bilmiyorsun.",
-        "Eski bir harita parçası buldun, üzerinde 'Gizli Geçit' yazıyor. Ama nerede olduğunu anlamıyorsun.",
-        "Bir köşede unutulmuş bir günlük buldun. İçinde korkunç yaratıklardan bahsediliyor.",
-        "Duvarlarda kanlı el izleri var. Buradan birileri geçmiş olmalı, ama nereye?",
-        "Garip bir koku alıyorsun. Çürümüş et mi, yoksa eski bir büyü mü?",
-        "Tavan çökmüş, ilerlemek için yeni bir yol bulmalısın.",
-        "Bir fısıltı duyuyorsun, adını söylüyor gibi. Yoksa sadece hayal mi?"
-    ];
-    const story = stories[Math.floor(Math.random() * stories.length)];
-    gameLogInsert(`Hikaye Parçacığı: "${story}"`);
+    storyState.consecutiveFights = 0; // Dinlenince ardışık dövüş sayacı sıfırlanır
     proceedAfterEvent();
 }
 
 function proceedAfterEvent(){
+  // Seviye atlama kontrolü
   if(player.exp >= player.level * 30){
     player.level++;
     player.exp = 0;
     player.maxHP += 5;
-    player.HP = player.maxHP;
-    player.g = Math.floor(player.g + 1);
+    player.HP = player.maxHP; // Seviye atlayınca canı full'le
+    player.g = Math.floor(player.g + 1); // Her seviye atlamada güç +1
     gameLogInsert(`Seviye atladın! Seviye ${player.level}. Max Can +5, Güç +1. Tamamen iyileştin!`);
     updatePlayerStatsUI();
   }
-  renderLocationActions(); // Go back to location selection
+  renderLocationActions(); // Olay bittikten sonra konum eylemlerini göster
 }
 
-/* training selection: uses same area temporarily */
 function openTrainingSelection(){
-  // Temporarily show character creation panel for training selection
   characterCreationPanel.classList.remove("hidden");
   gameContainer.classList.add("hidden");
 
   const prevStepLabel = stepLabel.textContent;
   const prevSelectBtnText = selectBtn.textContent;
-  // Store the current onclick function of selectBtn before changing it
-  const prevSelectBtnOnClick = selectBtn.onclick;
+  const prevSelectBtnOnClick = selectBtn.onclick; // Mevcut selectBtn click handler'ını kaydet
 
   stepLabel.textContent = "Training Seçimi";
   selectBtn.textContent = "Seçimi Yap";
@@ -791,16 +1818,31 @@ function openTrainingSelection(){
   currentOptions = trainingSegments();
   renderOptions(currentOptions);
 
-  // Remove the previous event listener to prevent multiple calls
-  selectBtn.removeEventListener("click", originalSelectBtnOnClick);
+  selectBtn.removeEventListener("click", originalSelectBtnOnClick); // Önceki listener'ı kaldır
 
-  // Assign new onclick for training selection
   selectBtn.onclick = () => {
     if (selecting) return;
     selecting = true;
     selectBtn.disabled = true;
 
     const selectedIndex = pickWeightedIndex(currentOptions);
+    if (selectedIndex === -1) {
+        gameLogInsert("Training seçimi yapılamadı, seçenek yok.");
+        // Hata durumunda paneli kapat ve oyuna dön
+        setTimeout(()=>{
+            characterCreationPanel.classList.add("hidden");
+            gameContainer.classList.remove("hidden");
+            stepLabel.textContent = prevStepLabel;
+            selectBtn.textContent = prevSelectBtnText;
+            selectBtn.onclick = originalSelectBtnOnClick; // Orijinal listener'ı geri yükle
+            selectBtn.disabled = true;
+            currentOptions = [];
+            renderOptions([]); // Seçenekleri temizle
+            proceedAfterEvent();
+        }, 500);
+        return;
+    }
+
     animateSelection(selectedIndex, () => {
       const sel = currentOptions[selectedIndex];
       if(sel.stat === "güc"){ player.g += sel.amount; gameLogInsert(`Training: Güç +${sel.amount}`); }
@@ -809,26 +1851,22 @@ function openTrainingSelection(){
       updatePlayerStatsUI();
 
       setTimeout(()=>{
-        // Restore game UI
         characterCreationPanel.classList.add("hidden");
         gameContainer.classList.remove("hidden");
 
         stepLabel.textContent = prevStepLabel;
         selectBtn.textContent = prevSelectBtnText;
-        // Restore the original onclick function
-        selectBtn.onclick = originalSelectBtnOnClick; // Use the global originalSelectBtnOnClick
-        selectBtn.disabled = true; // Keep disabled as we are in game mode now (no selection needed)
-        currentOptions = []; // Clear current options as we're done with training selection
-        renderOptions(currentOptions); // Render empty list
-        proceedAfterEvent(); // Continue game flow
+        selectBtn.onclick = originalSelectBtnOnClick; // Orijinal listener'ı geri yükle
+        selectBtn.disabled = true;
+        currentOptions = [];
+        renderOptions([]); // Seçenekleri temizle
+        proceedAfterEvent();
       }, 800);
     });
   };
 }
 
-/* UI Update Functions */
 function updatePlayerStatsUI(){
-    // Update character creation stats display (if visible)
     statGucEl.textContent = player.g;
     statHizEl.textContent = player.h;
     statKarizmaEl.textContent = player.k;
@@ -836,8 +1874,7 @@ function updatePlayerStatsUI(){
     statLevel.textContent = player.level;
     statExp.textContent = player.exp;
 
-    // Update game stats display (always visible during game)
-    gameStatClanEl.textContent = selectedClan.name;
+    gameStatClanEl.textContent = selectedClan ? selectedClan.name : "Bilinmiyor";
     gameStatStyleEl.textContent = player.style;
     gameStatGucEl.textContent = player.g;
     gameStatHizEl.textContent = player.h;
@@ -862,58 +1899,86 @@ function updateFightsWonDisplay(){
     fightsWonDisplay.textContent = `${fightsWon}/10`;
 }
 
-/* Utils */
-function gameLogInsert(txt){ const d=document.createElement("div"); d.innerHTML = txt; gameLog.appendChild(d); gameLog.scrollTop = gameLog.scrollHeight; }
-function disableEventActions(dis){ const btns = eventActionsDiv.querySelectorAll("button"); btns.forEach(b=>b.disabled = !!dis); }
+function gameLogInsert(txt){
+    const d=document.createElement("div");
+    d.innerHTML = txt;
+    gameLog.appendChild(d);
+    gameLog.scrollTop = gameLog.scrollHeight; // En alta kaydır
+}
 
-/* End Game */
+function disableEventActions(dis){
+    const btns = eventActionsDiv.querySelectorAll("button");
+    btns.forEach(b=>b.disabled = !!dis);
+}
+
 function endGame(win){
   adventureArea.classList.add("hidden");
   gameStatsDisplay.classList.add("hidden");
   finalPanel.classList.remove("hidden");
   finalLog.innerHTML = "";
-  finalLog.innerHTML += `<div>${win ? "Zafer! Oyunu tamamladın." : "Maalesef kaybettin."}</div>`;
+  
+  if(win){
+    if(storyState.hasAlly){
+      finalLog.innerHTML += `<div>Tebrikler! Hem Berat Hoca'yı yendin hem de müttefiklerin sayesinde daha kolay kazandın!</div>`;
+    } else {
+      finalLog.innerHTML += `<div>Tebrikler! Berat Hoca'yı yendin ve oyunu tamamladın!</div>`;
+    }
+  } else {
+    finalLog.innerHTML += `<div>Maalesef kaybettin. Bir dahaki sefere daha iyi hazırlan!</div>`;
+  }
+  
   finalLog.innerHTML += `<div style="margin-top:8px">Seviye: ${player.level} · Güç: ${player.g} · Hız: ${player.h} · Karizma: ${player.k} · Son Can: ${player.HP}/${player.maxHP}</div>`;
+  
+  // Oyun bittiğinde tüm eylemleri devre dışı bırak
+  disableEventActions(true);
 }
 
-/* ========== init / reset ========== */
 function init(){
   currentStepIndex = 0; currentOptions = []; selectedClan=null; selectedGuc=null; selectedHiz=null; selectedKarizma=null; selectedHP=null; selectedStyle=null;
   player = {g:0,h:0,k:0, style:null, level:1, exp:0, HP:0, maxHP:0, inventory:[]};
   currentEnemy = null; consecutiveEscapes = 0; fightsWon = 0; currentZone = 1;
+  storyState = {step: 0, helpedStranger: null, foundMap: false, knowsSecret: false, trustLevel: 0, hasAlly: false, enemyCount: 0, discoveredTruth: false,
+                hasKey: false, hasAncientScroll: false, hasDemiralayRing: false, visitedSecretLibrary: false, consecutiveFights: 0}; // storyState sıfırlandı
 
-  // Reset character creation stats display
+  // UI elementlerini sıfırla
   statClanEl.textContent = "-"; statGucEl.textContent = "-"; statHizEl.textContent = "-"; statKarizmaEl.textContent = "-"; statStyleEl.textContent = "-";
   statHPEl.textContent = "-"; statLevel.textContent = "1"; statExp.textContent = "0"; inventoryEl.textContent = "Boş";
 
-  // Reset game stats display
   gameStatClanEl.textContent = "-"; gameStatGucEl.textContent = "-"; gameStatHizEl.textContent = "-"; gameStatKarizmaEl.textContent = "-"; gameStatStyleEl.textContent = "-";
   gameStatHPEl.textContent = "-"; gameStatLevel.textContent = "1"; gameStatExp.textContent = "0"; gameInventoryEl.textContent = "Boş";
   fightsWonDisplay.textContent = "0/10";
 
-
-  characterCreationPanel.classList.remove("hidden"); // Show character creation panel
-  gameContainer.classList.add("hidden"); // Hide main game container
-
+  // Panelleri doğru duruma getir
+  characterCreationPanel.classList.remove("hidden");
+  gameContainer.classList.add("hidden");
   document.getElementById("gameIntro").classList.remove("hidden");
-  finalPanel.classList.add("hidden"); startGameBtn.classList.add("hidden");
+  finalPanel.classList.add("hidden");
+  startGameBtn.classList.add("hidden"); // Başlangıçta gizli olmalı
+
+  // Buton durumlarını sıfırla
   selectBtn.disabled = false;
   selectBtn.textContent = "Seç";
   selecting = false;
 
-  // Ensure the original onclick function is correctly assigned
-  selectBtn.onclick = originalSelectBtnOnClick;
-
+  // selectBtn'e orijinal event listener'ı tekrar ekle (eğer daha önce kaldırıldıysa)
+  // Bu kısım, `originalSelectBtnOnClick`'in global scope'ta tanımlanmasıyla daha iyi yönetilir.
+  // Eğer `selectBtn.addEventListener("click", originalSelectBtnOnClick);` init dışında bir kez tanımlandıysa,
+  // burada tekrar eklemeye gerek kalmaz, çünkü `openTrainingSelection` içinde kaldırılıp geri yükleniyor.
+  // Ancak emin olmak için:
+  selectBtn.removeEventListener("click", selectBtn.onclick); // Mevcut tüm click handler'larını kaldır
+  selectBtn.addEventListener("click", originalSelectBtnOnClick); // Orijinalini ekle
 
   stepLabel.textContent = "Adım 1/6: Klan";
-  updateStep();
+  updateStep(); // İlk adımı başlat
   stepResult.textContent = "";
-  gameLog.innerHTML = "";
+  gameLog.innerHTML = ""; // Oyun logunu temizle
 }
-resetBtn.addEventListener("click", init);
-restartAllBtn.addEventListener("click", ()=> location.reload());
 
+// Sayfa yüklendiğinde init fonksiyonunu çağır
 window.addEventListener("load", init);
+
+// Baştan Başlat butonu için event listener
+restartAllBtn.addEventListener("click", ()=> location.reload()); // Sayfayı yeniden yükleyerek oyunu sıfırla
 </script>
 </body>
 </html>
